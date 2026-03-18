@@ -1,0 +1,115 @@
+/* app-header is a structural wrapper — render as contents so its children
+   participate directly in the outer flex layout */
+app-header {
+  display: contents;
+}
+
+/* Selected nav item */
+[data-tab][data-selected] {
+  background: rgba(var(--bs-black-rgb), 0.2);
+  font-weight: 600;
+}
+
+/* Card styling */
+.card {
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+}
+
+.card-header {
+  background: var(--bs-white);
+  border-bottom: 1px solid var(--bs-border-color);
+  border-radius: 10px 10px 0 0 !important;
+  font-weight: 600;
+}
+
+/* Copy phone button */
+.copy-phone-btn {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+/* Calendar Gantt */
+.cal-gantt {
+  overflow-x: auto;
+}
+
+.cal-gantt-row {
+  display: flex;
+  align-items: stretch;
+  min-width: max-content;
+}
+
+.cal-gantt-label {
+  width: 110px;
+  min-width: 110px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--bs-white);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.cal-gantt-cells {
+  display: flex;
+}
+
+.cal-gantt-hcell,
+.cal-gantt-cell {
+  width: 28px;
+  min-width: 28px;
+  height: 32px;
+  border-right: 1px solid var(--bs-border-color);
+  border-bottom: 1px solid var(--bs-border-color);
+  box-sizing: border-box;
+}
+
+.cal-gantt-hcell {
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--bs-secondary-color);
+  position: relative;
+}
+
+.cal-gantt-month-label {
+  font-size: 0.58rem;
+  color: var(--bs-secondary-color);
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.cal-gantt-occupied {
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.cal-gantt-occupied:hover {
+  opacity: 1;
+}
+
+.cal-gantt-today {
+  background: var(--bs-warning-bg-subtle) !important;
+}
+
+.cal-gantt-sep {
+  border-left: 2px solid var(--bs-secondary-color) !important;
+}

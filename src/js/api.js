@@ -1,7 +1,7 @@
 const SCHEMA = {
   rentals: {
     sheet: "Rentals",
-    columns: ["Id", "Name"],
+    columns: ["Id", "Name", "PropertyRegistryNumber", "FloorArea", "ElectricitySupplyNumber"],
   },
   customers: {
     sheet: "Customers",
@@ -129,12 +129,23 @@ window.api = {
 
   async addRental(rental) {
     const db = SheetDb(SCHEMA.rentals);
-    await db.append({ Id: db.newId(), Name: rental.Name });
+    await db.append({
+      Id: db.newId(),
+      Name: rental.Name,
+      PropertyRegistryNumber: rental.PropertyRegistryNumber || "",
+      FloorArea: rental.FloorArea || "",
+      ElectricitySupplyNumber: rental.ElectricitySupplyNumber || "",
+    });
   },
 
   async updateRental(rentalId, rental) {
     const rowIndex = await window.sheets.getRowIndexById(SCHEMA.rentals.sheet, rentalId);
-    await SheetDb(SCHEMA.rentals).updateRow(rowIndex, { Name: rental.Name });
+    await SheetDb(SCHEMA.rentals).updateRow(rowIndex, {
+      Name: rental.Name,
+      PropertyRegistryNumber: rental.PropertyRegistryNumber || "",
+      FloorArea: rental.FloorArea || "",
+      ElectricitySupplyNumber: rental.ElectricitySupplyNumber || "",
+    });
   },
 
   async deleteRental(rentalId) {

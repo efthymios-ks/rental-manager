@@ -44,6 +44,9 @@ class RentalsTab extends LitElement {
     modal.show();
     this.updateComplete.then(() => {
       this.querySelector("#addRentalName").value = "";
+      this.querySelector("#addRentalPropertyRegistryNumber").value = "";
+      this.querySelector("#addRentalFloorArea").value = "";
+      this.querySelector("#addRentalElectricitySupplyNumber").value = "";
     });
   }
 
@@ -55,6 +58,9 @@ class RentalsTab extends LitElement {
     this.updateComplete.then(() => {
       this.querySelector("#editRentalId").value = rental.Id;
       this.querySelector("#editRentalName").value = rental.Name;
+      this.querySelector("#editRentalPropertyRegistryNumber").value = rental.PropertyRegistryNumber ?? "";
+      this.querySelector("#editRentalFloorArea").value = rental.FloorArea ?? "";
+      this.querySelector("#editRentalElectricitySupplyNumber").value = rental.ElectricitySupplyNumber ?? "";
     });
   }
 
@@ -69,7 +75,12 @@ class RentalsTab extends LitElement {
     this._addErrors = [];
     this._addSaving = true;
     try {
-      await window.api.addRental({ Name: name });
+      await window.api.addRental({
+        Name: name,
+        PropertyRegistryNumber: this.querySelector("#addRentalPropertyRegistryNumber").value.trim(),
+        FloorArea: this.querySelector("#addRentalFloorArea").value.trim(),
+        ElectricitySupplyNumber: this.querySelector("#addRentalElectricitySupplyNumber").value.trim(),
+      });
       bootstrap.Modal.getInstance(this.querySelector("#addRentalModal")).hide();
       await this.#reload();
     } catch (error) {
@@ -91,7 +102,12 @@ class RentalsTab extends LitElement {
     this._editErrors = [];
     this._editSaving = true;
     try {
-      await window.api.updateRental(rentalId, { Name: name });
+      await window.api.updateRental(rentalId, {
+        Name: name,
+        PropertyRegistryNumber: this.querySelector("#editRentalPropertyRegistryNumber").value.trim(),
+        FloorArea: this.querySelector("#editRentalFloorArea").value.trim(),
+        ElectricitySupplyNumber: this.querySelector("#editRentalElectricitySupplyNumber").value.trim(),
+      });
       bootstrap.Modal.getInstance(this.querySelector("#editRentalModal")).hide();
       await this.#reload();
     } catch (error) {
@@ -146,6 +162,18 @@ class RentalsTab extends LitElement {
                 <input type="text" id="addRentalName" class="form-control" placeholder="Name" />
                 <label><i class="bi bi-house-door me-1"></i>Name <span class="text-danger">*</span></label>
               </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="addRentalPropertyRegistryNumber" class="form-control" placeholder="Property Registry Number" />
+                <label>Property Registry Number</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="addRentalFloorArea" class="form-control" placeholder="Floor Area (m²)" />
+                <label>Floor Area (m²)</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="addRentalElectricitySupplyNumber" class="form-control" placeholder="Electricity Supply Number" />
+                <label>Electricity Supply Number</label>
+              </div>
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
@@ -175,6 +203,18 @@ class RentalsTab extends LitElement {
               <div class="form-floating mb-3">
                 <input type="text" id="editRentalName" class="form-control" placeholder="Name" />
                 <label><i class="bi bi-house-door me-1"></i>Name <span class="text-danger">*</span></label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="editRentalPropertyRegistryNumber" class="form-control" placeholder="Property Registry Number" />
+                <label>Property Registry Number</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="editRentalFloorArea" class="form-control" placeholder="Floor Area (m²)" />
+                <label>Floor Area (m²)</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="editRentalElectricitySupplyNumber" class="form-control" placeholder="Electricity Supply Number" />
+                <label>Electricity Supply Number</label>
               </div>
               ${this.#renderErrors(this._editErrors)}
             </div>

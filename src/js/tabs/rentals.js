@@ -236,14 +236,14 @@ class RentalsTab extends LitElement {
     const listContent = this._rentals.length
       ? html`
           <div class="table-responsive rm-table-scroll">
-            <table class="table table-sm table-striped table-hover rm-table mb-0">
+            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
               <thead class="table-success">
                 <tr>
                   <th>Name</th>
-                  <th>Property Registry #</th>
-                  <th class="text-end">Floor Area (m²)</th>
-                  <th>Electricity Supply #</th>
-                  <th></th>
+                  <th class="text-center">Property Registry #</th>
+                  <th class="text-center">Floor Area (m²)</th>
+                  <th class="text-center">Electricity Supply #</th>
+                  <th class="text-center"></th>
                 </tr>
               </thead>
               <tbody>
@@ -254,11 +254,11 @@ class RentalsTab extends LitElement {
                   return html`
                     <tr>
                       <td class="fw-semibold">${rental.Name}</td>
-                      <td>${rental.PropertyRegistryNumber || ""}</td>
-                      <td class="text-end">${rental.FloorArea || ""}</td>
-                      <td>${rental.ElectricitySupplyNumber || ""}</td>
-                      <td class="text-end">
-                        <div class="d-flex gap-1 justify-content-end">
+                      <td class="text-center">${rental.PropertyRegistryNumber || ""}</td>
+                      <td class="text-center">${rental.FloorArea || ""}</td>
+                      <td class="text-center">${rental.ElectricitySupplyNumber || ""}</td>
+                      <td class="text-center">
+                        <div class="d-flex gap-1 justify-content-center">
                           <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(rental)}>
                             <i class="bi bi-pencil"></i>
                           </button>
@@ -276,6 +276,15 @@ class RentalsTab extends LitElement {
                   `;
                 })}
               </tbody>
+              <tfoot class="fw-bold">
+                <tr>
+                  <td>Total (${this._rentals.length})</td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         `

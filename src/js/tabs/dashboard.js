@@ -172,8 +172,8 @@ class DashboardTab extends LitElement {
             <td class="fw-semibold">${rental.rentalName}</td>
             <td class="text-center">${rental.bookingCount}</td>
             <td class="text-center">${rental.totalDays}</td>
-            <td class="text-end text-success">${rental.totalIncome.toFixed(2)}€</td>
-            <td class="text-end text-danger">${rental.totalExpenses.toFixed(2)}€</td>
+            <td class="text-center text-success">${rental.totalIncome.toFixed(2)}€</td>
+            <td class="text-center text-danger">${rental.totalExpenses.toFixed(2)}€</td>
             <td class="text-end fw-semibold ${diff >= 0 ? "text-success" : "text-danger"}">
               ${diff >= 0 ? "+" : ""}${diff.toFixed(2)}€
             </td>
@@ -190,8 +190,8 @@ class DashboardTab extends LitElement {
                 <th>Rental</th>
                 <th class="text-center">Bookings</th>
                 <th class="text-center">Days</th>
-                <th class="text-end">Income</th>
-                <th class="text-end">Expenses</th>
+                <th class="text-center">Income</th>
+                <th class="text-center">Expenses</th>
                 <th class="text-end">Difference</th>
               </tr>
             </thead>
@@ -201,8 +201,8 @@ class DashboardTab extends LitElement {
                 <td>Total</td>
                 <td class="text-center">${totalBookings}</td>
                 <td class="text-center">${totalDays}</td>
-                <td class="text-end text-success">${totalIncome.toFixed(2)}€</td>
-                <td class="text-end text-danger">${totalExpenses.toFixed(2)}€</td>
+                <td class="text-center text-success">${totalIncome.toFixed(2)}€</td>
+                <td class="text-center text-danger">${totalExpenses.toFixed(2)}€</td>
                 <td class="text-end ${totalDiff >= 0 ? "text-success" : "text-danger"}">
                   ${totalDiff >= 0 ? "+" : ""}${totalDiff.toFixed(2)}€
                 </td>

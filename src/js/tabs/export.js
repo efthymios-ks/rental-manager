@@ -113,15 +113,15 @@ class ExportTab extends LitElement {
     const previewContent = this._filteredBookings.length
       ? html`
           <div class="table-responsive rm-table-scroll">
-            <table class="table table-sm table-striped table-hover rm-table mb-0">
+            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
               <thead class="table-success">
                 <tr>
-                  <th>Πελάτης</th>
-                  <th>ΑΦΜ / ΑΔ</th>
-                  <th>Κατοικία</th>
-                  <th class="text-end">Έσοδα</th>
-                  <th>Άφιξη</th>
-                  <th>Αναχώρηση</th>
+                  <th class="text-center">Πελάτης</th>
+                  <th class="text-center">ΑΦΜ / ΑΔ</th>
+                  <th class="text-center">Κατοικία</th>
+                  <th class="text-center">Έσοδα</th>
+                  <th class="text-center">Άφιξη</th>
+                  <th class="text-center">Αναχώρηση</th>
                   <th class="text-center">Μέρες</th>
                 </tr>
               </thead>
@@ -130,17 +130,28 @@ class ExportTab extends LitElement {
                   const customer = booking.customer || {};
                   return html`
                     <tr>
-                      <td>${customer.FullName || "—"}</td>
-                      <td>${String(customer.VatOrPassport || "—")}</td>
-                      <td>${(booking.rental && booking.rental.Name) || "—"}</td>
-                      <td class="text-end">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
-                      <td>${booking.ArrivalDate}</td>
-                      <td>${booking.DepartureDate}</td>
+                      <td class="text-center">${customer.FullName || "—"}</td>
+                      <td class="text-center">${String(customer.VatOrPassport || "—")}</td>
+                      <td class="text-center">${(booking.rental && booking.rental.Name) || "—"}</td>
+                      <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
+                      <td class="text-center">${booking.ArrivalDate}</td>
+                      <td class="text-center">${booking.DepartureDate}</td>
                       <td class="text-center">${booking.DurationDays}</td>
                     </tr>
                   `;
                 })}
               </tbody>
+              <tfoot class="fw-bold">
+                <tr>
+                  <td class="text-center">Total (${this._filteredBookings.length})</td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         `

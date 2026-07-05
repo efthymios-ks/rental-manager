@@ -332,25 +332,25 @@ class ExpensesTab extends LitElement {
               <thead class="table-success">
                 <tr>
                   <th>Name</th>
-                  <th>Rentals</th>
-                  <th>Date</th>
-                  <th class="text-end">Amount</th>
-                  <th></th>
+                  <th class="text-center">Rentals</th>
+                  <th class="text-center">Date</th>
+                  <th class="text-center">Amount</th>
+                  <th class="text-center"></th>
                 </tr>
               </thead>
               <tbody>
                 ${expenses.map((expense) => html`
                   <tr>
                     <td class="fw-semibold">${expense.Name}</td>
-                    <td>
-                      <div class="d-flex gap-1 flex-nowrap">
+                    <td class="text-center">
+                      <div class="d-flex gap-1 flex-nowrap justify-content-center">
                         ${expense.rentals.map((rental) => html`<span class="badge bg-secondary">${rental.Name}</span>`)}
                       </div>
                     </td>
-                    <td>${expense.DateCreated ? formatDate(expense.DateCreated) : ""}</td>
-                    <td class="text-end">${parseFloat(expense.AmountEuros).toFixed(2)}€</td>
-                    <td class="text-end">
-                      <div class="d-flex gap-1 justify-content-end">
+                    <td class="text-center">${expense.DateCreated ? formatDate(expense.DateCreated) : ""}</td>
+                    <td class="text-center">${parseFloat(expense.AmountEuros).toFixed(2)}€</td>
+                    <td class="text-center">
+                      <div class="d-flex gap-1 justify-content-center">
                         <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(expense)}>
                           <i class="bi bi-pencil"></i>
                         </button>
@@ -365,10 +365,10 @@ class ExpensesTab extends LitElement {
               <tfoot class="fw-bold">
                 <tr>
                   <td>Total (${expenses.length})</td>
-                  <td></td>
-                  <td></td>
-                  <td class="text-end">${totalAmount.toFixed(2)}€</td>
-                  <td></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center">${totalAmount.toFixed(2)}€</td>
+                  <td class="text-center"></td>
                 </tr>
               </tfoot>
             </table>

@@ -357,14 +357,14 @@ class CustomersTab extends LitElement {
     const listContent = customers.length
       ? html`
           <div class="table-responsive rm-table-scroll">
-            <table class="table table-sm table-striped table-hover rm-table mb-0">
+            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
               <thead class="table-success">
                 <tr>
                   <th>Name</th>
-                  <th>Phone</th>
-                  <th>VAT / Passport</th>
+                  <th class="text-center">Phone</th>
+                  <th class="text-center">VAT / Passport</th>
                   <th class="text-center">Rating</th>
-                  <th></th>
+                  <th class="text-center"></th>
                 </tr>
               </thead>
               <tbody>
@@ -373,8 +373,8 @@ class CustomersTab extends LitElement {
                   return html`
                     <tr>
                       <td class="fw-semibold">${customer.FullName}</td>
-                      <td>${customer.PhoneNumber || ""}</td>
-                      <td>${customer.VatOrPassport || ""}</td>
+                      <td class="text-center">${customer.PhoneNumber || ""}</td>
+                      <td class="text-center">${customer.VatOrPassport || ""}</td>
                       <td class="text-center">
                         ${customer.Rating === 1
                           ? html`<span class="badge bg-success">Good</span>`
@@ -382,8 +382,8 @@ class CustomersTab extends LitElement {
                           ? html`<span class="badge bg-danger">Bad</span>`
                           : ""}
                       </td>
-                      <td class="text-end">
-                        <div class="d-flex gap-1 justify-content-end">
+                      <td class="text-center">
+                        <div class="d-flex gap-1 justify-content-center">
                           <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(customer)}>
                             <i class="bi bi-pencil"></i>
                           </button>
@@ -401,6 +401,15 @@ class CustomersTab extends LitElement {
                   `;
                 })}
               </tbody>
+              <tfoot class="fw-bold">
+                <tr>
+                  <td>Total (${customers.length})</td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                  <td class="text-center"></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         `

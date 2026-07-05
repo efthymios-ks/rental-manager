@@ -311,13 +311,13 @@ class BookingsTab extends LitElement {
           <thead class="table-success">
             <tr>
               <th>Rental</th>
-              <th>Customer</th>
-              <th>Arrival</th>
-              <th>Departure</th>
+              <th class="text-center">Customer</th>
+              <th class="text-center">Arrival</th>
+              <th class="text-center">Departure</th>
               <th class="text-center">Days</th>
-              <th class="text-end">Amount</th>
+              <th class="text-center">Amount</th>
               <th class="text-center">Off Record</th>
-              <th></th>
+              <th class="text-center"></th>
             </tr>
           </thead>
           <tbody>
@@ -327,16 +327,16 @@ class BookingsTab extends LitElement {
               return html`
                 <tr>
                   <td class="fw-semibold">${rental.Name || booking.RentalId}</td>
-                  <td>${customer.FullName || booking.CustomerId}</td>
-                  <td>${formatDate(booking.ArrivalDate)}</td>
-                  <td>${formatDate(booking.DepartureDate)}</td>
+                  <td class="text-center">${customer.FullName || booking.CustomerId}</td>
+                  <td class="text-center">${formatDate(booking.ArrivalDate)}</td>
+                  <td class="text-center">${formatDate(booking.DepartureDate)}</td>
                   <td class="text-center">${booking.DurationDays}</td>
-                  <td class="text-end">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
+                  <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
                   <td class="text-center">
                     ${booking.OffRecord ? html`<span class="badge bg-dark">Off</span>` : ""}
                   </td>
-                  <td class="text-end">
-                    <div class="d-flex gap-1 justify-content-end">
+                  <td class="text-center">
+                    <div class="d-flex gap-1 justify-content-center">
                       <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(booking)}>
                         <i class="bi bi-pencil"></i>
                       </button>
@@ -352,13 +352,13 @@ class BookingsTab extends LitElement {
           <tfoot class="fw-bold">
             <tr>
               <td>Total (${bookings.length})</td>
-              <td></td>
-              <td></td>
-              <td></td>
+              <td class="text-center"></td>
+              <td class="text-center"></td>
+              <td class="text-center"></td>
               <td class="text-center">${totalDays}</td>
-              <td class="text-end">${totalAmount.toFixed(2)}€</td>
-              <td></td>
-              <td></td>
+              <td class="text-center">${totalAmount.toFixed(2)}€</td>
+              <td class="text-center"></td>
+              <td class="text-center"></td>
             </tr>
           </tfoot>
         </table>

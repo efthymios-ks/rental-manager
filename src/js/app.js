@@ -1,5 +1,6 @@
 import { state } from "./state.js";
 import "./components/appHeader.js";
+import "./components/calendar.js";
 import "./components/loadingOverlay.js";
 import "./tabs/bookings.js";
 import "./tabs/customers.js";
@@ -30,7 +31,7 @@ async function onAuthReady() {
 
 function showTab(tabName) {
   state.currentTab = tabName;
-  const tabNames = ["dashboard", "bookings", "expenses", "customers", "rentals", "export"];
+  const tabNames = ["dashboard", "calendar", "bookings", "expenses", "customers", "rentals", "export"];
 
   tabNames.forEach((currentTabName) => {
     document.getElementById(`tab-${currentTabName}`).classList.toggle("d-none", currentTabName !== tabName);
@@ -42,29 +43,7 @@ function showTab(tabName) {
       : link.removeAttribute("data-selected");
   });
 
-  if (tabName === "dashboard") {
-    document.getElementById("tab-dashboard").load();
-  }
-
-  if (tabName === "bookings") {
-    document.getElementById("tab-bookings").load();
-  }
-
-  if (tabName === "expenses") {
-    document.getElementById("tab-expenses").load();
-  }
-
-  if (tabName === "customers") {
-    document.getElementById("tab-customers").load();
-  }
-
-  if (tabName === "rentals") {
-    document.getElementById("tab-rentals").load();
-  }
-
-  if (tabName === "export") {
-    document.getElementById("tab-export").load();
-  }
+  document.getElementById(`tab-${tabName}`).load();
 }
 
 

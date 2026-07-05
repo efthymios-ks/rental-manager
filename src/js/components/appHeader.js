@@ -2,6 +2,7 @@ import { LitElement, html, nothing } from "../../lib/lit.min.js";
 
 const TABS = [
   { name: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
+  { name: "calendar", label: "Calendar", icon: "bi-calendar3" },
   { name: "bookings", label: "Bookings", icon: "bi-calendar-check" },
   { name: "expenses", label: "Expenses", icon: "bi-receipt" },
   { name: "customers", label: "Customers", icon: "bi-people" },

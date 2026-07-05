@@ -1,7 +1,9 @@
 import { LitElement, html } from "../../lib/lit.min.js";
-import "../components/rentalFilterDropdown.js";
+import { filterBar } from "./filterBar.js";
+import "./monthPicker.js";
+import "./rentalFilterDropdown.js";
 import { state } from "../state.js";
-import { todayStr } from "../utils.js";
+import { computeCalendarYears, todayStr } from "../utils.js";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -10,9 +12,9 @@ const MONTH_NAMES = [
 
 class CalendarTab extends LitElement {
   static properties = {
-    _years: { state: true },
     _year: { state: true },
     _month: { state: true },
+    _years: { state: true },
     _rentals: { state: true },
     _rentalIds: { state: true },
   };
@@ -22,9 +24,9 @@ class CalendarTab extends LitElement {
 
   constructor() {
     super();
-    this._years = [];
     this._year = new Date().getFullYear();
     this._month = new Date().getMonth();
+    this._years = [];
     this._rentals = [];
     this._rentalIds = null;
   }
@@ -40,22 +42,12 @@ class CalendarTab extends LitElement {
     this.#bookings = bookings;
     this.#buildDayBookings(bookings);
 
-    const yearSet = new Set();
-    bookings.forEach((booking) => {
-      if (booking.ArrivalDate) {
-        yearSet.add(new Date(booking.ArrivalDate).getFullYear());
-      }
+    this._years = computeCalendarYears();
+    this._rentalIds = state.sharedRentalIds;
+
+    this.updateComplete.then(() => {
+      this.querySelector("rental-filter-dropdown")?.setSelected(state.sharedRentalIds);
     });
-
-    let years = Array.from(yearSet).sort((yearA, yearB) => yearB - yearA);
-    const thisYear = new Date().getFullYear();
-    if (!years.length) {
-      years = [thisYear];
-    }
-
-    this._years = years;
-    this._year = years.includes(thisYear) ? thisYear : years[0];
-    this._month = new Date().getMonth();
   }
 
   #buildDayBookings(bookings) {
@@ -104,12 +96,14 @@ class CalendarTab extends LitElement {
     this._year = year;
   }
 
-  #onYearChange(event) {
-    this._year = parseInt(event.target.value);
+  #onMonthPickerChange(event) {
+    this._year = event.detail.year;
+    this._month = event.detail.month;
   }
 
   #onRentalChange(event) {
-    this._rentalIds = event.target.selectedIds;
+    state.sharedRentalIds = event.target.selectedIds;
+    this._rentalIds = state.sharedRentalIds;
   }
 
   #handleCalendarClick(event) {
@@ -144,31 +138,18 @@ class CalendarTab extends LitElement {
   }
 
   #getDates() {
+    const days = new Date(this._year, this._month + 1, 0).getDate();
+    const paddedMonth = String(this._month + 1).padStart(2, "0");
     const dates = [];
-    const addMonth = (year, month) => {
-      const days = new Date(year, month + 1, 0).getDate();
-      const paddedMonth = String(month + 1).padStart(2, "0");
-      for (let day = 1; day <= days; day++) {
-        dates.push(`${year}-${paddedMonth}-${String(day).padStart(2, "0")}`);
-      }
-    };
-
-    addMonth(this._year, this._month);
-    let nextMonth = this._month + 1;
-    let nextYear = this._year;
-    if (nextMonth > 11) {
-      nextMonth = 0;
-      nextYear++;
+    for (let day = 1; day <= days; day++) {
+      dates.push(`${this._year}-${paddedMonth}-${String(day).padStart(2, "0")}`);
     }
-
-    addMonth(nextYear, nextMonth);
     return dates;
   }
 
   render() {
     const rentalIds = this._rentalIds ?? [];
     const dates = this.#getDates();
-    const separatorIndex = new Date(this._year, this._month + 1, 0).getDate();
     const today = todayStr();
     const calendarColors = ["var(--bs-primary)", "var(--bs-secondary)"];
 
@@ -208,42 +189,27 @@ class CalendarTab extends LitElement {
         ? this._rentals.filter((rental) => rentalIds.includes(rental.Id))
         : this._rentals;
 
-    let nextMonth = this._month + 1;
-    let nextYear = this._year;
-    if (nextMonth > 11) {
-      nextMonth = 0;
-      nextYear++;
-    }
-
-    const monthLabel = `${MONTH_NAMES[this._month]} ${this._year} - ${MONTH_NAMES[nextMonth]} ${nextYear}`;
-    const headerCells = dates.map((dateAsString, dateIndex) => {
+    const headerCells = dates.map((dateAsString) => {
       const dayNum = parseInt(dateAsString.substring(8));
-      const monthIndex = parseInt(dateAsString.substring(5, 7)) - 1;
-      const sep = dateIndex === separatorIndex ? " cal-gantt-sep" : "";
       const todayCls = dateAsString === today ? " cal-gantt-today" : "";
-      const monthLbl =
-        dayNum === 1 || dateIndex === 0
-          ? html`<div class="cal-gantt-month-label">${MONTH_NAMES[monthIndex].substring(0, 3)}</div>`
-          : "";
-      return html`<div class="cal-gantt-hcell${sep}${todayCls}">${monthLbl}${dayNum}</div>`;
+      return html`<div class="cal-gantt-hcell${todayCls}">${dayNum}</div>`;
     });
 
     const rows = filteredRentals.map((rental) => {
-      const cells = dates.map((dateAsString, dateIndex) => {
+      const cells = dates.map((dateAsString) => {
         const booking = bookingMap[rental.Id]?.[dateAsString];
-        const sep = dateIndex === separatorIndex ? " cal-gantt-sep" : "";
         const todayCls = dateAsString === today ? " cal-gantt-today" : "";
         if (booking) {
           const color = bookingColorMap[booking.Id] || "var(--bs-primary)";
           return html`<div
-            class="cal-gantt-cell cal-gantt-occupied${sep}"
+            class="cal-gantt-cell cal-gantt-occupied"
             style="background:${color};"
             data-date="${dateAsString}"
             title="${booking.customer?.FullName ?? ""}"
           ></div>`;
         }
 
-        return html`<div class="cal-gantt-cell${sep}${todayCls}"></div>`;
+        return html`<div class="cal-gantt-cell${todayCls}"></div>`;
       });
       return html`
         <div class="cal-gantt-row">
@@ -256,44 +222,30 @@ class CalendarTab extends LitElement {
     });
 
     return html`
-      <div class="card mb-3">
+      ${filterBar(html`
+        <rental-filter-dropdown
+          .rentals=${state.allRentals}
+          @change=${this.#onRentalChange}
+        ></rental-filter-dropdown>
+        <a
+          href="#"
+          class="text-decoration-none text-muted fs-5"
+          @click=${(event) => { event.preventDefault(); this.#prev(); }}
+        >&#8592;</a>
+        <month-picker
+          .years=${this._years}
+          .year=${this._year}
+          .month=${this._month}
+          @change=${this.#onMonthPickerChange}
+        ></month-picker>
+        <a
+          href="#"
+          class="text-decoration-none text-muted fs-5"
+          @click=${(event) => { event.preventDefault(); this.#next(); }}
+        >&#8594;</a>
+      `)}
+      <div class="card">
         <div class="card-header"><i class="bi bi-calendar3 me-1"></i> Calendar</div>
-        <div class="card-body border-bottom py-3">
-          <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
-            <a
-              href="#"
-              class="text-decoration-none text-muted"
-              @click=${(event) => {
-                event.preventDefault();
-                this.#prev();
-              }}
-            >&#8592;</a>
-            <span class="fw-semibold small text-nowrap">${monthLabel}</span>
-            <a
-              href="#"
-              class="text-decoration-none text-muted"
-              @click=${(event) => {
-                event.preventDefault();
-                this.#next();
-              }}
-            >&#8594;</a>
-            <select
-              class="form-select form-select-sm"
-              style="max-width:90px"
-              @change=${this.#onYearChange}
-            >
-              ${this._years.map(
-                (year) => html`
-                  <option value="${year}" .selected=${year === this._year}>${year}</option>
-                `,
-              )}
-            </select>
-            <rental-filter-dropdown
-              .rentals=${this._rentals}
-              @change=${this.#onRentalChange}
-            ></rental-filter-dropdown>
-          </div>
-        </div>
         <div class="card-body p-3" @click=${this.#handleCalendarClick}>
           <div class="cal-gantt">
             <div class="cal-gantt-row cal-gantt-header">

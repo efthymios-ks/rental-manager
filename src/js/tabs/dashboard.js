@@ -1,6 +1,6 @@
 import { LitElement, html } from "../../lib/lit.min.js";
-import "../components/calendar.js";
 import { filterBar } from "../components/filterBar.js";
+import "../components/rentalFilterDropdown.js";
 import "../components/yearCheckboxDropdown.js";
 import { state } from "../state.js";
 import { computeSharedYears, defaultSharedYears } from "../utils.js";
@@ -41,13 +41,18 @@ class DashboardTab extends LitElement {
     );
     this.updateComplete.then(() => {
       this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
-      this.querySelector("calendar-tab")?.load();
+      this.querySelector("rental-filter-dropdown")?.setSelected(state.sharedRentalIds);
     });
   }
 
   #onYearChange(event) {
     state.sharedYears = event.target.selectedYears;
     this._selectedYears = state.sharedYears;
+  }
+
+  #onRentalChange(event) {
+    state.sharedRentalIds = event.target.selectedIds;
+    this.requestUpdate();
   }
 
   #copyPhone(phone) {
@@ -103,6 +108,7 @@ class DashboardTab extends LitElement {
 
   #aggregateRentals() {
     const activeYears = this._selectedYears;
+    const activeRentalIds = state.sharedRentalIds;
     const selectedSummaries = activeYears
       ? this._summaries.filter((summary) => activeYears.includes(summary.year))
       : this._summaries;
@@ -114,6 +120,9 @@ class DashboardTab extends LitElement {
     const rentalMap = new Map();
     selectedSummaries.forEach((summary) => {
       summary.rentals.forEach((rental) => {
+        if (activeRentalIds !== null && !activeRentalIds.includes(rental.rentalId)) {
+          return;
+        }
         const existing = rentalMap.get(rental.rentalId) || {
           rentalId: rental.rentalId,
           rentalName: rental.rentalName,
@@ -212,9 +221,12 @@ class DashboardTab extends LitElement {
           .years=${this._years}
           @change=${this.#onYearChange}
         ></year-checkbox-dropdown>
+        <rental-filter-dropdown
+          .rentals=${state.allRentals}
+          @change=${this.#onRentalChange}
+        ></rental-filter-dropdown>
       `)}
       ${this.#renderMissingVat()}
-      <calendar-tab></calendar-tab>
       <div class="row g-3 mt-0">
         <div class="col-12 col-md-6">
           <div class="card">

@@ -178,6 +178,15 @@ export function defaultSharedYears() {
   return [String(new Date().getFullYear())];
 }
 
+export function computeCalendarYears() {
+  const years = computeSharedYears().map(Number);
+  const nextYear = new Date().getFullYear() + 1;
+  if (!years.includes(nextYear)) {
+    years.unshift(nextYear);
+  }
+  return years;
+}
+
 export function getCheckedIds(containerId) {
   return Array.prototype.map.call(
     document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`),

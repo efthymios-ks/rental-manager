@@ -1,5 +1,5 @@
 import { LitElement, html } from "../../lib/lit.min.js";
-import { initFixedStrategyDropdown } from "../utils.js";
+import { formatRentalsLabel, initFixedStrategyDropdown } from "../utils.js";
 
 class RentalFilterDropdown extends LitElement {
   static properties = {
@@ -42,24 +42,8 @@ class RentalFilterDropdown extends LitElement {
   }
 
   get #label() {
-    const count = this._checkedIds.length;
-    if (count === this.rentals.length) {
-      return "All Rentals";
-    }
-
-    if (count === 0) {
-      return "No Rentals";
-    }
-
-    if (count <= 2) {
-      return this.rentals
-        .filter((rental) => this._checkedIds.includes(rental.Id))
-        .map((rental) => rental.Name)
-        .sort((a, b) => a.localeCompare(b))
-        .join(", ");
-    }
-
-    return `${count} Rentals`;
+    const selected = this.rentals.filter((rental) => this._checkedIds.includes(rental.Id));
+    return formatRentalsLabel(selected, this.rentals.length);
   }
 
   #handleChange(rentalId, checked) {

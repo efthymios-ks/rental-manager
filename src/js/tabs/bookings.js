@@ -1,6 +1,7 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import "../components/customerSelect.js";
 import { filterBar } from "../components/filterBar.js";
+import "../components/noteAutocomplete.js";
 import "../components/rentalFilterDropdown.js";
 import "../components/rentalSelect.js";
 import "../components/yearCheckboxDropdown.js";
@@ -11,6 +12,7 @@ import {
   defaultSharedYears,
   formatDate,
   normalizeSearch,
+  uniqueNotes,
   updateDurationField,
 } from "../utils.js";
 
@@ -401,10 +403,11 @@ class BookingsTab extends LitElement {
                 <input type="number" id="addBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
                 <label><i class="bi bi-currency-euro me-1"></i>Amount Paid</label>
               </div>
-              <div class="form-floating mb-3">
-                <input type="text" id="addBookingNotes" class="form-control" placeholder="Notes" />
-                <label><i class="bi bi-chat-left-text me-1"></i>Notes</label>
-              </div>
+              <note-autocomplete
+                id="addBookingNotes"
+                class="mb-3"
+                .suggestions=${uniqueNotes(state.allBookings)}
+              ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="addBookingOffRecord" />
                 <label class="form-check-label" for="addBookingOffRecord">
@@ -465,10 +468,11 @@ class BookingsTab extends LitElement {
                 <input type="number" id="editBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
                 <label><i class="bi bi-currency-euro me-1"></i>Amount Paid</label>
               </div>
-              <div class="form-floating mb-3">
-                <input type="text" id="editBookingNotes" class="form-control" placeholder="Notes" />
-                <label><i class="bi bi-chat-left-text me-1"></i>Notes</label>
-              </div>
+              <note-autocomplete
+                id="editBookingNotes"
+                class="mb-3"
+                .suggestions=${uniqueNotes(state.allBookings)}
+              ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="editBookingOffRecord" />
                 <label class="form-check-label" for="editBookingOffRecord">

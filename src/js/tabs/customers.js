@@ -1,8 +1,9 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "../components/filterBar.js";
+import "../components/noteAutocomplete.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
-import { normalizeSearch } from "../utils.js";
+import { normalizeSearch, uniqueNotes } from "../utils.js";
 
 function validateCustomerForm(fullName) {
   return fullName ? [] : ["Full name is required."];
@@ -271,10 +272,11 @@ class CustomersTab extends LitElement {
                 </button>
               </div>
               ${this.#renderRatingButtons(this._addRating, (v) => this._addRating = v)}
-              <div class="form-floating mb-3">
-                <input type="text" id="addCustomerNotes" class="form-control" placeholder="Notes" />
-                <label><i class="bi bi-chat-left-text me-1"></i>Notes</label>
-              </div>
+              <note-autocomplete
+                id="addCustomerNotes"
+                class="mb-3"
+                .suggestions=${uniqueNotes(state.allCustomers)}
+              ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="addCustomerIgnoreMissingVat" />
                 <label class="form-check-label" for="addCustomerIgnoreMissingVat">
@@ -326,10 +328,11 @@ class CustomersTab extends LitElement {
                 </button>
               </div>
               ${this.#renderRatingButtons(this._editRating, (v) => this._editRating = v)}
-              <div class="form-floating mb-3">
-                <input type="text" id="editCustomerNotes" class="form-control" placeholder="Notes" />
-                <label><i class="bi bi-chat-left-text me-1"></i>Notes</label>
-              </div>
+              <note-autocomplete
+                id="editCustomerNotes"
+                class="mb-3"
+                .suggestions=${uniqueNotes(state.allCustomers)}
+              ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="editCustomerIgnoreMissingVat" />
                 <label class="form-check-label" for="editCustomerIgnoreMissingVat">

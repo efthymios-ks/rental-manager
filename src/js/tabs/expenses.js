@@ -1,5 +1,6 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "../components/filterBar.js";
+import "../components/noteAutocomplete.js";
 import "../components/rentalCheckboxes.js";
 import "../components/rentalFilterDropdown.js";
 import "../components/yearCheckboxDropdown.js";
@@ -9,7 +10,10 @@ import {
   computeSharedYears,
   defaultSharedYears,
   formatDate,
+  formatRentalsLabel,
   todayStr,
+  uniqueByField,
+  uniqueNotes,
 } from "../utils.js";
 
 function validateExpenseForm(name, amountEuros, date) {
@@ -239,10 +243,14 @@ class ExpensesTab extends LitElement {
               <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Add Expense</h5>
             </div>
             <div class="modal-body">
-              <div class="form-floating mb-3">
-                <input type="text" id="addExpenseName" class="form-control" placeholder="Name" />
-                <label><i class="bi bi-tag me-1"></i>Name</label>
-              </div>
+              <note-autocomplete
+                id="addExpenseName"
+                class="mb-3"
+                label="Name"
+                placeholder="Name"
+                icon="bi-tag"
+                .suggestions=${uniqueByField(state.allExpenses, "Name")}
+              ></note-autocomplete>
               <div class="mb-3">
                 <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>Rentals</label>
                 <rental-checkboxes id="addExpenseRentalCheckboxes"></rental-checkboxes>
@@ -255,10 +263,11 @@ class ExpensesTab extends LitElement {
                 <input type="date" id="addExpenseDate" class="form-control" placeholder="Date" />
                 <label><i class="bi bi-calendar-event me-1"></i>Date</label>
               </div>
-              <div class="form-floating mb-3">
-                <input type="text" id="addExpenseNotes" class="form-control" placeholder="Notes" />
-                <label><i class="bi bi-chat-left-text me-1"></i>Notes</label>
-              </div>
+              <note-autocomplete
+                id="addExpenseNotes"
+                class="mb-3"
+                .suggestions=${uniqueNotes(state.allExpenses)}
+              ></note-autocomplete>
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
@@ -285,10 +294,14 @@ class ExpensesTab extends LitElement {
             </div>
             <div class="modal-body">
               <input type="hidden" id="editExpenseId" />
-              <div class="form-floating mb-3">
-                <input type="text" id="editExpenseName" class="form-control" placeholder="Name" />
-                <label><i class="bi bi-tag me-1"></i>Name</label>
-              </div>
+              <note-autocomplete
+                id="editExpenseName"
+                class="mb-3"
+                label="Name"
+                placeholder="Name"
+                icon="bi-tag"
+                .suggestions=${uniqueByField(state.allExpenses, "Name")}
+              ></note-autocomplete>
               <div class="mb-3">
                 <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>Rentals</label>
                 <rental-checkboxes id="editExpenseRentalCheckboxes"></rental-checkboxes>
@@ -301,10 +314,11 @@ class ExpensesTab extends LitElement {
                 <input type="date" id="editExpenseDate" class="form-control" placeholder="Date" />
                 <label><i class="bi bi-calendar-event me-1"></i>Date</label>
               </div>
-              <div class="form-floating mb-3">
-                <input type="text" id="editExpenseNotes" class="form-control" placeholder="Notes" />
-                <label><i class="bi bi-chat-left-text me-1"></i>Notes</label>
-              </div>
+              <note-autocomplete
+                id="editExpenseNotes"
+                class="mb-3"
+                .suggestions=${uniqueNotes(state.allExpenses)}
+              ></note-autocomplete>
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
@@ -343,9 +357,7 @@ class ExpensesTab extends LitElement {
                   <tr>
                     <td class="fw-semibold">${expense.Name}</td>
                     <td class="text-center">
-                      <div class="d-flex gap-1 flex-nowrap justify-content-center">
-                        ${expense.rentals.map((rental) => html`<span class="badge bg-secondary">${rental.Name}</span>`)}
-                      </div>
+                      ${formatRentalsLabel(expense.rentals, state.allRentals.length)}
                     </td>
                     <td class="text-center">${expense.DateCreated ? formatDate(expense.DateCreated) : ""}</td>
                     <td class="text-center">${parseFloat(expense.AmountEuros).toFixed(2)}€</td>

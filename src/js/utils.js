@@ -141,6 +141,32 @@ export function hideSpinnerReveal(spinnerId, controlsId) {
   }
 }
 
+export function uniqueByField(items, fieldName) {
+  const set = new Set();
+  items.forEach((item) => {
+    if (item[fieldName]) set.add(item[fieldName]);
+  });
+  return Array.from(set).sort((valueA, valueB) => valueA.localeCompare(valueB));
+}
+
+export function uniqueNotes(items) {
+  return uniqueByField(items, "Notes");
+}
+
+export function formatRentalsLabel(rentals, totalRentalCount) {
+  const count = rentals.length;
+  if (count === 0) return "No Rentals";
+  if (count === totalRentalCount) return "All Rentals";
+  if (count <= 2) {
+    return rentals
+      .map((rental) => rental.Name)
+      .sort((nameA, nameB) => nameA.localeCompare(nameB))
+      .join(", ");
+  }
+
+  return `${count} Rentals`;
+}
+
 export function initFixedStrategyDropdown(hostElement) {
   const toggle = hostElement.querySelector('[data-bs-toggle="dropdown"]');
   if (toggle && typeof bootstrap !== "undefined") {

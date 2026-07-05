@@ -352,20 +352,6 @@ class CustomersTab extends LitElement {
     `;
   }
 
-  #renderSummaryCards() {
-    const customers = this._filteredCustomers;
-    return html`
-      <div class="row g-3 p-3 border-bottom">
-        <div class="col-6 col-md-4 col-lg-3">
-          <div class="rounded-3 p-3 bg-primary bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Customers</div>
-            <div class="fs-4 fw-bold text-primary">${customers.length}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   render() {
     const customers = this._filteredCustomers;
     const listContent = customers.length
@@ -448,7 +434,6 @@ class CustomersTab extends LitElement {
             <i class="bi bi-plus-lg me-1"></i>Add
           </button>
         </div>
-        ${this.#renderSummaryCards()}
         <div>${listContent}</div>
       </div>
       ${this.#renderAddModal()}

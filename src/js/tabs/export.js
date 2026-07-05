@@ -109,27 +109,6 @@ class ExportTab extends LitElement {
     XLSX.writeFile(workbook, `bookings_${this.#fromDate || "export"}_${this.#toDate || ""}.xlsx`);
   }
 
-  #renderSummaryCards() {
-    const bookings = this._filteredBookings;
-    const totalRevenue = bookings.reduce((sum, b) => sum + (parseFloat(b.AmountEuros) || 0), 0);
-    return html`
-      <div class="row g-3 p-3 border-bottom">
-        <div class="col-6 col-lg">
-          <div class="rounded-3 p-3 bg-primary bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Bookings</div>
-            <div class="fs-4 fw-bold text-primary">${bookings.length}</div>
-          </div>
-        </div>
-        <div class="col-6 col-lg">
-          <div class="rounded-3 p-3 bg-success bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Revenue</div>
-            <div class="fs-4 fw-bold text-success">${totalRevenue.toFixed(2)}€</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   render() {
     const previewContent = this._filteredBookings.length
       ? html`
@@ -205,7 +184,6 @@ class ExportTab extends LitElement {
             <i class="bi bi-download me-1"></i>Download .xlsx
           </button>
         </div>
-        ${this.#renderSummaryCards()}
         <div>${previewContent}</div>
       </div>
     `;

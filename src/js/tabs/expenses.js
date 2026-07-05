@@ -321,56 +321,6 @@ class ExpensesTab extends LitElement {
     `;
   }
 
-  #renderSummaryCards() {
-    const expenses = this._filteredExpenses;
-    const totalAmount = expenses.reduce((sum, e) => sum + (parseFloat(e.AmountEuros) || 0), 0);
-
-    const rentalMap = new Map();
-    expenses.forEach((e) => {
-      const amount = parseFloat(e.AmountEuros) || 0;
-      const share = e.rentals.length > 0 ? amount / e.rentals.length : amount;
-      e.rentals.forEach((rental) => {
-        const existing = rentalMap.get(rental.Name) || { name: rental.Name, amount: 0 };
-        existing.amount += share;
-        rentalMap.set(rental.Name, existing);
-      });
-    });
-
-    const rentalPalette = [
-      { bg: "bg-warning bg-opacity-10", text: "text-warning" },
-      { bg: "bg-danger bg-opacity-10", text: "text-danger" },
-      { bg: "bg-secondary bg-opacity-10", text: "text-secondary" },
-      { bg: "bg-dark bg-opacity-10", text: "text-dark" },
-    ];
-
-    return html`
-      <div class="row g-3 p-3 border-bottom">
-        <div class="col-6 col-lg">
-          <div class="rounded-3 p-3 bg-primary bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Expenses</div>
-            <div class="fs-4 fw-bold text-primary">${expenses.length}</div>
-          </div>
-        </div>
-        <div class="col-6 col-lg">
-          <div class="rounded-3 p-3 bg-success bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Amount</div>
-            <div class="fs-4 fw-bold text-success">${totalAmount.toFixed(2)}€</div>
-          </div>
-        </div>
-        ${[...rentalMap.values()].map((r, i) => {
-          const { bg, text } = rentalPalette[i % rentalPalette.length];
-          return html`
-            <div class="col-6 col-lg">
-              <div class="rounded-3 p-3 ${bg} h-100 text-center">
-                <div class="text-uppercase small fw-semibold text-muted">${r.name}</div>
-                <div class="fs-4 fw-bold ${text}">${r.amount.toFixed(2)}€</div>
-              </div>
-            </div>
-          `;
-        })}
-      </div>
-    `;
-  }
 
   render() {
     const expenses = this._filteredExpenses;
@@ -444,7 +394,6 @@ class ExpensesTab extends LitElement {
             <i class="bi bi-plus-lg me-1"></i>Add
           </button>
         </div>
-        ${this.#renderSummaryCards()}
         <div>${listContent}</div>
       </div>
       ${this.#renderAddModal()}

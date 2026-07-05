@@ -295,58 +295,6 @@ class BookingsTab extends LitElement {
     `;
   }
 
-  #renderSummaryCards() {
-    const bookings = this._filteredBookings;
-    const totalRevenue = bookings.reduce((sum, b) => sum + (parseFloat(b.AmountEuros) || 0), 0);
-    const totalDays = bookings.reduce((sum, b) => sum + (parseInt(b.DurationDays) || 0), 0);
-
-    const rentalMap = new Map();
-    bookings.forEach((b) => {
-      const name = b.rental?.Name || b.RentalId;
-      rentalMap.set(b.RentalId, { name, count: (rentalMap.get(b.RentalId)?.count || 0) + 1 });
-    });
-
-    const rentalPalette = [
-      { bg: "bg-warning bg-opacity-10", text: "text-warning" },
-      { bg: "bg-danger bg-opacity-10", text: "text-danger" },
-      { bg: "bg-secondary bg-opacity-10", text: "text-secondary" },
-      { bg: "bg-dark bg-opacity-10", text: "text-dark" },
-    ];
-
-    return html`
-      <div class="row g-3 p-3 border-bottom">
-        <div class="col-6 col-lg">
-          <div class="rounded-3 p-3 bg-primary bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Bookings</div>
-            <div class="fs-4 fw-bold text-primary">${bookings.length}</div>
-          </div>
-        </div>
-        <div class="col-6 col-lg">
-          <div class="rounded-3 p-3 bg-info bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Days</div>
-            <div class="fs-4 fw-bold text-info">${totalDays}</div>
-          </div>
-        </div>
-        <div class="col-6 col-lg">
-          <div class="rounded-3 p-3 bg-success bg-opacity-10 h-100 text-center">
-            <div class="text-uppercase small fw-semibold text-muted">Total Revenue</div>
-            <div class="fs-4 fw-bold text-success">${totalRevenue.toFixed(2)}€</div>
-          </div>
-        </div>
-        ${[...rentalMap.values()].map((r, i) => {
-          const { bg, text } = rentalPalette[i % rentalPalette.length];
-          return html`
-            <div class="col-6 col-lg">
-              <div class="rounded-3 p-3 ${bg} h-100 text-center">
-                <div class="text-uppercase small fw-semibold text-muted">${r.name}</div>
-                <div class="fs-4 fw-bold ${text}">${r.count} stay${r.count !== 1 ? "s" : ""}</div>
-              </div>
-            </div>
-          `;
-        })}
-      </div>
-    `;
-  }
 
   #renderList() {
     const bookings = this._filteredBookings;
@@ -584,7 +532,6 @@ class BookingsTab extends LitElement {
             <i class="bi bi-plus-lg me-1"></i>Add
           </button>
         </div>
-        ${this.#renderSummaryCards()}
         ${this.#renderList()}
       </div>
       ${this.#renderAddModal()}

@@ -7,4 +7,4 @@
 - Choose **Web application**, add authorized JavaScript origins (e.g. `http://127.0.0.1:5500`, `https://YOUR_USERNAME.github.io`)
 - Copy the **Client ID** (not the secret) and paste it into `config.js` as `GOOGLE_CLIENT_ID`
 - Go to **APIs & Services** → **Audience**, add test users or publish the app to make it production-ready
-- Add your spreadsheet ID to `config.js` as `SPREADSHEET_ID` (found in the Google Sheets URL between `/d/` and `/edit`)
+- Add your spreadsheet ID to `config.js` as `dataSource.id` (found in the Google Sheets URL between `/d/` and `/edit`)

@@ -8,7 +8,9 @@ The deploy pipeline (`deploy.yml`) triggers on every push to `master`. It inject
 
 ```js
 window.CONFIG = {
-  SPREADSHEET_ID: "%%SPREADSHEET_ID%%",
+  dataSource: {
+    id: "%%SPREADSHEET_ID%%",
+  },
   GOOGLE_CLIENT_ID: "%%GOOGLE_CLIENT_ID%%",
   ALLOWED_EMAILS: "%%ALLOWED_EMAILS%%".split(",").map((e) => e.trim()),
 };

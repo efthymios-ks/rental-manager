@@ -1,69 +1,19 @@
-const SCHEMA = {
-  rentals: {
-    sheet: "Rentals",
-    columns: ["Id", "Name", "PropertyRegistryNumber", "FloorArea", "ElectricitySupplyNumber"],
-  },
-  customers: {
-    sheet: "Customers",
-    columns: [
-      "Id",
-      "FullName",
-      "VatOrPassport",
-      "PhoneNumber",
-      "Rating",
-      "Notes",
-      "IgnoreMissingVat",
-    ],
-  },
-  bookings: {
-    sheet: "Bookings",
-    columns: [
-      "Id",
-      "RentalId",
-      "CustomerId",
-      "ArrivalDate",
-      "DepartureDate",
-      "AmountEuros",
-      "Notes",
-      "OffRecord",
-    ],
-  },
-  expenses: {
-    sheet: "Expenses",
-    columns: ["Id", "RentalIds", "Name", "AmountEuros", "Notes", "DateCreated"],
-  },
-};
-
-function SheetDb(schemaDef) {
-  return {
-    append: (obj) => window.sheets.append(schemaDef.sheet, schemaDef.columns, obj),
-    updateRow: (rowIndex, obj) =>
-      window.sheets.updateRow(schemaDef.sheet, schemaDef.columns, rowIndex, obj),
-    deleteRow: (rowIndex) => window.sheets.deleteRow(schemaDef.sheet, rowIndex),
-    newId: () => window.sheets.newId(),
-  };
-}
-
 window.api = {
   // --- Startup ---
 
   async loadAll() {
-    const [rawRentals, rawCustomers, rawBookings, rawExpenses] = await window.sheets.batchGetAll([
-      SCHEMA.rentals, SCHEMA.customers, SCHEMA.bookings, SCHEMA.expenses,
-    ]);
+    const { rentals, customers, bookings, expenses } = await window.sheets.getAllData();
 
-    const rentals = rawRentals;
-    const customers = rawCustomers.map(normalizeCustomer);
     const rentalMap = buildMap(rentals);
     const customerMap = buildMap(customers);
 
     window.state.allRentals = rentals;
     window.state.allCustomers = window.sortCustomers(customers);
-    window.state.allBookings = rawBookings
-      .map((row) => normalizeBooking(row, rentalMap, customerMap))
+    window.state.allBookings = bookings
+      .map((booking) => wireBooking(booking, rentalMap, customerMap))
       .sort((bookingA, bookingB) => bookingB.ArrivalDate.localeCompare(bookingA.ArrivalDate));
-    window.state.allExpenses = rawExpenses
-      .map((row) => normalizeExpense(row, rentalMap))
+    window.state.allExpenses = expenses
+      .map((expense) => wireExpense(expense, rentalMap))
       .sort((expenseA, expenseB) =>
         (expenseB.DateCreated || "").localeCompare(expenseA.DateCreated || ""),
       );
@@ -127,25 +77,12 @@ window.api = {
 
   // --- Rentals ---
 
-  async addRental(rental) {
-    const db = SheetDb(SCHEMA.rentals);
-    await db.append({
-      Id: db.newId(),
-      Name: rental.Name,
-      PropertyRegistryNumber: rental.PropertyRegistryNumber || "",
-      FloorArea: rental.FloorArea || "",
-      ElectricitySupplyNumber: rental.ElectricitySupplyNumber || "",
-    });
+  addRental(rental) {
+    return window.sheets.addRental(rental);
   },
 
-  async updateRental(rentalId, rental) {
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.rentals.sheet, rentalId);
-    await SheetDb(SCHEMA.rentals).updateRow(rowIndex, {
-      Name: rental.Name,
-      PropertyRegistryNumber: rental.PropertyRegistryNumber || "",
-      FloorArea: rental.FloorArea || "",
-      ElectricitySupplyNumber: rental.ElectricitySupplyNumber || "",
-    });
+  updateRental(rentalId, rental) {
+    return window.sheets.updateRental(rentalId, rental);
   },
 
   async deleteRental(rentalId) {
@@ -157,35 +94,17 @@ window.api = {
       throw new Error("Cannot delete rental with existing expenses.");
     }
 
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.rentals.sheet, rentalId);
-    await SheetDb(SCHEMA.rentals).deleteRow(rowIndex);
+    await window.sheets.deleteRental(rentalId);
   },
 
   // --- Customers ---
 
-  async addCustomer(customer) {
-    const db = SheetDb(SCHEMA.customers);
-    await db.append({
-      Id: db.newId(),
-      FullName: customer.FullName,
-      VatOrPassport: customer.VatOrPassport || "",
-      PhoneNumber: String(customer.PhoneNumber || ""),
-      Rating: customer.Rating ? String(customer.Rating) : "",
-      Notes: customer.Notes || "",
-      IgnoreMissingVat: customer.IgnoreMissingVat ? "1" : "",
-    });
+  addCustomer(customer) {
+    return window.sheets.addCustomer(customer);
   },
 
-  async updateCustomer(customerId, customer) {
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.customers.sheet, customerId);
-    await SheetDb(SCHEMA.customers).updateRow(rowIndex, {
-      FullName: customer.FullName,
-      VatOrPassport: customer.VatOrPassport || "",
-      PhoneNumber: String(customer.PhoneNumber || ""),
-      Rating: customer.Rating ? String(customer.Rating) : "",
-      Notes: customer.Notes || "",
-      IgnoreMissingVat: customer.IgnoreMissingVat ? "1" : "",
-    });
+  updateCustomer(customerId, customer) {
+    return window.sheets.updateCustomer(customerId, customer);
   },
 
   async deleteCustomer(customerId) {
@@ -193,117 +112,56 @@ window.api = {
       throw new Error("Cannot delete customer with existing bookings.");
     }
 
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.customers.sheet, customerId);
-    await SheetDb(SCHEMA.customers).deleteRow(rowIndex);
+    await window.sheets.deleteCustomer(customerId);
   },
 
   // --- Bookings ---
 
-  async addBooking(booking) {
-    const db = SheetDb(SCHEMA.bookings);
-    await db.append({
-      Id: db.newId(),
-      RentalId: booking.RentalId,
-      CustomerId: booking.CustomerId,
-      ArrivalDate: booking.ArrivalDate,
-      DepartureDate: booking.DepartureDate,
-      AmountEuros: booking.AmountEuros,
-      Notes: booking.Notes || "",
-      OffRecord: booking.OffRecord ? "1" : "",
-    });
+  addBooking(booking) {
+    return window.sheets.addBooking(booking);
   },
 
-  async updateBooking(bookingId, booking) {
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.bookings.sheet, bookingId);
-    await SheetDb(SCHEMA.bookings).updateRow(rowIndex, {
-      RentalId: booking.RentalId,
-      CustomerId: booking.CustomerId,
-      ArrivalDate: booking.ArrivalDate,
-      DepartureDate: booking.DepartureDate,
-      AmountEuros: booking.AmountEuros,
-      Notes: booking.Notes || "",
-      OffRecord: booking.OffRecord ? "1" : "",
-    });
+  updateBooking(bookingId, booking) {
+    return window.sheets.updateBooking(bookingId, booking);
   },
 
-  async deleteBooking(bookingId) {
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.bookings.sheet, bookingId);
-    await SheetDb(SCHEMA.bookings).deleteRow(rowIndex);
+  deleteBooking(bookingId) {
+    return window.sheets.deleteBooking(bookingId);
   },
 
   // --- Expenses ---
 
-  async addExpense(expense) {
-    const db = SheetDb(SCHEMA.expenses);
-    await db.append({
-      Id: db.newId(),
-      RentalIds: expense.RentalIds || "",
-      Name: expense.Name,
-      AmountEuros: expense.AmountEuros,
-      Notes: expense.Notes || "",
-      DateCreated: expense.DateCreated || toDateString(new Date()),
-    });
+  addExpense(expense) {
+    return window.sheets.addExpense(expense);
   },
 
-  async updateExpense(expenseId, expense) {
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.expenses.sheet, expenseId);
-    await SheetDb(SCHEMA.expenses).updateRow(rowIndex, {
-      RentalIds: expense.RentalIds || "",
-      Name: expense.Name,
-      AmountEuros: expense.AmountEuros,
-      Notes: expense.Notes || "",
-      DateCreated: expense.DateCreated || "",
-    });
+  updateExpense(expenseId, expense) {
+    return window.sheets.updateExpense(expenseId, expense);
   },
 
-  async deleteExpense(expenseId) {
-    const rowIndex = await window.sheets.getRowIndexById(SCHEMA.expenses.sheet, expenseId);
-    await SheetDb(SCHEMA.expenses).deleteRow(rowIndex);
+  deleteExpense(expenseId) {
+    return window.sheets.deleteExpense(expenseId);
   },
 };
 
-// Normalize helpers
+// Relation wiring (private)
 
-function normalizeCustomer(row) {
+function wireBooking(booking, rentalMap, customerMap) {
   return {
-    ...row,
-    VatOrPassport: row.VatOrPassport || null,
-    Rating: parseInt(row.Rating) || 0,
-    Notes: row.Notes || "",
-    PhoneNumber: String(row.PhoneNumber || ""),
-    IgnoreMissingVat: !!row.IgnoreMissingVat,
+    ...booking,
+    DurationDays: calcDurationDays(booking.ArrivalDate, booking.DepartureDate),
+    rental: rentalMap[booking.RentalId] || null,
+    customer: customerMap[booking.CustomerId] || null,
   };
 }
 
-function normalizeBooking(row, rentalMap, customerMap) {
-  const arrivalDate = toDateString(row.ArrivalDate);
-  const departureDate = toDateString(row.DepartureDate);
+function wireExpense(expense, rentalMap) {
   return {
-    ...row,
-    ArrivalDate: arrivalDate,
-    DepartureDate: departureDate,
-    DurationDays: calcDurationDays(arrivalDate, departureDate),
-    Notes: row.Notes || "",
-    OffRecord: row.OffRecord === "1",
-    rental: rentalMap[row.RentalId] || null,
-    customer: customerMap[row.CustomerId] || null,
+    ...expense,
+    rentals: expense.RentalIds.map((rentalId) => rentalMap[rentalId] || null).filter(Boolean),
+    Year: expense.DateCreated ? expense.DateCreated.substring(0, 4) : "",
   };
 }
-
-function normalizeExpense(row, rentalMap) {
-  const rentalIds = row.RentalIds ? String(row.RentalIds).split(",").filter(Boolean) : [];
-  const dateCreated = toDateString(row.DateCreated);
-  return {
-    ...row,
-    RentalIds: rentalIds,
-    rentals: rentalIds.map((rentalId) => rentalMap[rentalId] || null).filter(Boolean),
-    Notes: row.Notes || "",
-    DateCreated: dateCreated,
-    Year: dateCreated ? dateCreated.substring(0, 4) : "",
-  };
-}
-
-// Utilities
 
 function buildMap(items) {
   const map = {};
@@ -311,29 +169,6 @@ function buildMap(items) {
     map[item.Id] = item;
   });
   return map;
-}
-
-function round2(number) {
-  return Math.round(number * 100) / 100;
-}
-
-function toDateString(value) {
-  if (!value) {
-    return "";
-  }
-
-  if (typeof value === "string") {
-    return value.substring(0, 10);
-  }
-
-  if (typeof value === "number") {
-    // Google Sheets date serial: days since Dec 30, 1899
-    const date = new Date((value - 25569) * 86400000);
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
-  }
-
-  return "";
 }
 
 function calcDurationDays(arrivalDate, departureDate) {
@@ -345,4 +180,8 @@ function calcDurationDays(arrivalDate, departureDate) {
     0,
     Math.round((new Date(departureDate) - new Date(arrivalDate)) / 86400000),
   );
+}
+
+function round2(number) {
+  return Math.round(number * 100) / 100;
 }

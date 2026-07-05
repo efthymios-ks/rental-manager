@@ -78,5 +78,5 @@ window.refreshCurrentTab = refreshCurrentTab;
 window.setLoading = setLoading;
 
 window.onload = () => {
-  window.auth.initAuth(onAuthReady);
+  window.auth.login(onAuthReady);
 };

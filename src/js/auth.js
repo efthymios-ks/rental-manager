@@ -1,29 +1,30 @@
 let _accessToken = null;
+let _user = null;
 let _tokenClient = null;
 const STORAGE_KEY = "rm_auth";
 
-function saveToken(tokenResponse) {
+function saveSession(tokenResponse, user) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     access_token: tokenResponse.access_token,
     expires_at: Date.now() + tokenResponse.expires_in * 1000,
+    user,
   }));
 }
 
-function loadToken() {
+function loadSession() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (stored && stored.expires_at - Date.now() > 60_000) return stored.access_token;
+    if (stored && stored.expires_at - Date.now() > 60_000) return stored;
   } catch {}
   return null;
 }
 
-function clearToken() {
+function clearSession() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
 async function onTokenReceived(tokenResponse, onReady) {
   _accessToken = tokenResponse.access_token;
-  saveToken(tokenResponse);
 
   const userResp = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
     headers: { Authorization: `Bearer ${_accessToken}` },
@@ -31,21 +32,24 @@ async function onTokenReceived(tokenResponse, onReady) {
   const userInfo = await userResp.json();
 
   if (!CONFIG.ALLOWED_EMAILS.includes(userInfo.email)) {
-    clearToken();
+    clearSession();
     window.location.href = `401.html?email=${encodeURIComponent(userInfo.email)}`;
     return;
   }
 
+  _user = userInfo;
+  saveSession(tokenResponse, userInfo);
   document.getElementById("authOverlay").classList.replace("d-flex", "d-none");
   document.getElementById("mainContent").classList.remove("d-none");
   onReady();
 }
 
-function initAuth(onReady) {
-  // Use stored token if still valid
-  const cached = loadToken();
+function login(onReady) {
+  // Use stored session if still valid
+  const cached = loadSession();
   if (cached) {
-    _accessToken = cached;
+    _accessToken = cached.access_token;
+    _user = cached.user || null;
     document.getElementById("authOverlay").classList.replace("d-flex", "d-none");
     document.getElementById("mainContent").classList.remove("d-none");
     onReady();
@@ -87,8 +91,19 @@ function initAuth(onReady) {
   waitForGIS();
 }
 
-function getToken() {
+function logout() {
+  clearSession();
+  _accessToken = null;
+  _user = null;
+  window.location.reload();
+}
+
+function getUser() {
+  return _user;
+}
+
+function getAccessToken() {
   return _accessToken;
 }
 
-window.auth = { initAuth, getToken };
+window.auth = { login, logout, getUser, getAccessToken };

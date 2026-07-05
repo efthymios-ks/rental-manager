@@ -10,6 +10,13 @@ app-header {
   font-weight: 600;
 }
 
+/* Mobile navbar (fixed 56px) offset for tab-level sticky headers */
+@media (max-width: 767.98px) {
+  .tab-filter-sticky {
+    top: 56px;
+  }
+}
+
 /* Card styling */
 .card {
   border: none;

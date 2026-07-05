@@ -1,4 +1,5 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { initFixedStrategyDropdown } from "../utils.js";
 
 class RentalFilterDropdown extends LitElement {
   static properties = {
@@ -10,6 +11,7 @@ class RentalFilterDropdown extends LitElement {
     super();
     this.rentals = [];
     this._checkedIds = [];
+    this._userInitialized = false;
   }
 
   createRenderRoot() {
@@ -17,9 +19,22 @@ class RentalFilterDropdown extends LitElement {
   }
 
   willUpdate(changedProperties) {
-    if (changedProperties.has("rentals") && this.rentals.length) {
+    if (
+      changedProperties.has("rentals") &&
+      this.rentals.length &&
+      !this._userInitialized
+    ) {
       this._checkedIds = this.rentals.map((rental) => rental.Id);
     }
+  }
+
+  setSelected(rentalIds) {
+    this._userInitialized = true;
+    this._checkedIds = rentalIds ? [...rentalIds] : this.rentals.map((rental) => rental.Id);
+  }
+
+  firstUpdated() {
+    initFixedStrategyDropdown(this);
   }
 
   get selectedIds() {
@@ -27,18 +42,24 @@ class RentalFilterDropdown extends LitElement {
   }
 
   get #label() {
-    if (this._checkedIds.length === this.rentals.length) {
+    const count = this._checkedIds.length;
+    if (count === this.rentals.length) {
       return "All Rentals";
     }
 
-    if (this._checkedIds.length === 0) {
+    if (count === 0) {
       return "No Rentals";
     }
 
-    return this.rentals
-      .filter((rental) => this._checkedIds.includes(rental.Id))
-      .map((rental) => rental.Name)
-      .join(", ");
+    if (count <= 2) {
+      return this.rentals
+        .filter((rental) => this._checkedIds.includes(rental.Id))
+        .map((rental) => rental.Name)
+        .sort((a, b) => a.localeCompare(b))
+        .join(", ");
+    }
+
+    return `${count} Rentals`;
   }
 
   #handleChange(rentalId, checked) {

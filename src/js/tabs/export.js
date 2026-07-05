@@ -1,4 +1,5 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { filterBar } from "../components/filterBar.js";
 import "../components/rentalFilterDropdown.js";
 import { state } from "../state.js";
 
@@ -9,7 +10,6 @@ class ExportTab extends LitElement {
 
   #fromDate = "";
   #toDate = "";
-  #selectedRentalIds = null;
 
   constructor() {
     super();
@@ -24,22 +24,23 @@ class ExportTab extends LitElement {
     const currentYear = new Date().getFullYear();
     this.#fromDate = `${currentYear}-01-01`;
     this.#toDate = `${currentYear}-12-31`;
-    this.#selectedRentalIds = null;
     state.exportBookings = state.allBookings;
     this.#applyFilters();
     this.updateComplete.then(() => {
       this.querySelector("#exportFrom").value = this.#fromDate;
       this.querySelector("#exportTo").value = this.#toDate;
+      this.querySelector("rental-filter-dropdown")?.setSelected(state.sharedRentalIds);
     });
   }
 
   #applyFilters() {
+    const selectedRentalIds = state.sharedRentalIds;
     this._filteredBookings = state.exportBookings.filter((booking) => {
       if (booking.OffRecord) {
         return false;
       }
 
-      if (this.#selectedRentalIds !== null && !this.#selectedRentalIds.includes(booking.RentalId)) {
+      if (selectedRentalIds !== null && !selectedRentalIds.includes(booking.RentalId)) {
         return false;
       }
 
@@ -66,7 +67,7 @@ class ExportTab extends LitElement {
   }
 
   #onRentalChange(event) {
-    this.#selectedRentalIds = event.target.selectedIds;
+    state.sharedRentalIds = event.target.selectedIds;
     this.#applyFilters();
   }
 
@@ -188,6 +189,32 @@ class ExportTab extends LitElement {
       : html`<p class="text-muted p-3">No bookings for this range.</p>`;
 
     return html`
+      ${filterBar(html`
+        <div class="form-floating" style="width: 160px">
+          <input
+            type="date"
+            id="exportFrom"
+            class="form-control form-control-sm"
+            placeholder="From"
+            @input=${this.#onFromChange}
+          />
+          <label>From</label>
+        </div>
+        <div class="form-floating" style="width: 160px">
+          <input
+            type="date"
+            id="exportTo"
+            class="form-control form-control-sm"
+            placeholder="To"
+            @input=${this.#onToChange}
+          />
+          <label>To</label>
+        </div>
+        <rental-filter-dropdown
+          .rentals=${state.allRentals}
+          @change=${this.#onRentalChange}
+        ></rental-filter-dropdown>
+      `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-download me-1"></i> Export</span>
@@ -200,34 +227,6 @@ class ExportTab extends LitElement {
           </button>
         </div>
         ${this.#renderSummaryCards()}
-        <div class="card-body border-bottom py-3">
-          <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
-            <div class="form-floating" style="max-width: 180px">
-              <input
-                type="date"
-                id="exportFrom"
-                class="form-control form-control-sm"
-                placeholder="From"
-                @input=${this.#onFromChange}
-              />
-              <label>From</label>
-            </div>
-            <div class="form-floating" style="max-width: 180px">
-              <input
-                type="date"
-                id="exportTo"
-                class="form-control form-control-sm"
-                placeholder="To"
-                @input=${this.#onToChange}
-              />
-              <label>To</label>
-            </div>
-            <rental-filter-dropdown
-              .rentals=${state.allRentals}
-              @change=${this.#onRentalChange}
-            ></rental-filter-dropdown>
-          </div>
-        </div>
         <div>${previewContent}</div>
       </div>
     `;

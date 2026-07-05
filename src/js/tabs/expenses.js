@@ -1,10 +1,16 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { filterBar } from "../components/filterBar.js";
 import "../components/rentalCheckboxes.js";
 import "../components/rentalFilterDropdown.js";
-import { extractYearsFromItems } from "../components/yearCheckboxDropdown.js";
+import "../components/yearCheckboxDropdown.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
-import { formatDate, todayStr } from "../utils.js";
+import {
+  computeSharedYears,
+  defaultSharedYears,
+  formatDate,
+  todayStr,
+} from "../utils.js";
 
 function validateExpenseForm(name, amountEuros, date) {
   const errors = [];
@@ -34,8 +40,6 @@ class ExpensesTab extends LitElement {
   };
 
   #allExpenses = [];
-  #selectedYears = [];
-  #selectedRentalIds = [];
 
   constructor() {
     super();
@@ -53,7 +57,14 @@ class ExpensesTab extends LitElement {
 
   load() {
     this.#allExpenses = state.allExpenses;
-    this._years = extractYearsFromItems(this.#allExpenses, "DateCreated");
+    this._years = computeSharedYears();
+    if (state.sharedYears === null) {
+      state.sharedYears = defaultSharedYears();
+    }
+    this.updateComplete.then(() => {
+      this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
+      this.querySelector("rental-filter-dropdown")?.setSelected(state.sharedRentalIds);
+    });
     this.#applyFilters();
   }
 
@@ -63,14 +74,16 @@ class ExpensesTab extends LitElement {
   }
 
   #applyFilters() {
+    const selectedYears = state.sharedYears;
+    const selectedRentalIds = state.sharedRentalIds;
     this._filteredExpenses = this.#allExpenses.filter((expense) => {
-      if (this.#selectedYears.length > 0 && !this.#selectedYears.includes(expense.Year)) {
+      if (selectedYears !== null && !selectedYears.includes(expense.Year)) {
         return false;
       }
 
       if (
-        this.#selectedRentalIds.length > 0 &&
-        !expense.RentalIds.some((rentalId) => this.#selectedRentalIds.includes(rentalId))
+        selectedRentalIds !== null &&
+        !expense.RentalIds.some((rentalId) => selectedRentalIds.includes(rentalId))
       ) {
         return false;
       }
@@ -80,12 +93,12 @@ class ExpensesTab extends LitElement {
   }
 
   #onYearChange(event) {
-    this.#selectedYears = event.target.selectedYears;
+    state.sharedYears = event.target.selectedYears;
     this.#applyFilters();
   }
 
   #onRentalChange(event) {
-    this.#selectedRentalIds = event.target.selectedIds;
+    state.sharedRentalIds = event.target.selectedIds;
     this.#applyFilters();
   }
 
@@ -417,6 +430,16 @@ class ExpensesTab extends LitElement {
       : html`<p class="text-muted p-3">No expenses found.</p>`;
 
     return html`
+      ${filterBar(html`
+        <year-checkbox-dropdown
+          .years=${this._years}
+          @change=${this.#onYearChange}
+        ></year-checkbox-dropdown>
+        <rental-filter-dropdown
+          .rentals=${state.allRentals}
+          @change=${this.#onRentalChange}
+        ></rental-filter-dropdown>
+      `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-receipt me-1"></i> Expenses</span>
@@ -425,18 +448,6 @@ class ExpensesTab extends LitElement {
           </button>
         </div>
         ${this.#renderSummaryCards()}
-        <div class="card-body border-bottom py-3">
-          <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
-            <year-checkbox-dropdown
-              .years=${this._years}
-              @change=${this.#onYearChange}
-            ></year-checkbox-dropdown>
-            <rental-filter-dropdown
-              .rentals=${state.allRentals}
-              @change=${this.#onRentalChange}
-            ></rental-filter-dropdown>
-          </div>
-        </div>
         <div>${listContent}</div>
       </div>
       ${this.#renderAddModal()}

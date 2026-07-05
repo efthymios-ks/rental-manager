@@ -1,11 +1,14 @@
 import { LitElement, html } from "../../lib/lit.min.js";
-import { state } from "../state.js";
 import "../components/calendar.js";
+import { filterBar } from "../components/filterBar.js";
+import "../components/yearCheckboxDropdown.js";
+import { state } from "../state.js";
+import { computeSharedYears, defaultSharedYears } from "../utils.js";
 
 class DashboardTab extends LitElement {
   static properties = {
     _years: { state: true },
-    _selectedYear: { state: true },
+    _selectedYears: { state: true },
     _summaries: { state: true },
     _missingVatCustomers: { state: true },
   };
@@ -13,7 +16,7 @@ class DashboardTab extends LitElement {
   constructor() {
     super();
     this._years = [];
-    this._selectedYear = "";
+    this._selectedYears = null;
     this._summaries = [];
     this._missingVatCustomers = [];
   }
@@ -26,27 +29,25 @@ class DashboardTab extends LitElement {
     const yearSummaries = window.api.computeDashboardSummaries();
     state.allDashboardSummaries = yearSummaries;
 
-    const years = yearSummaries
-      .map((summary) => summary.year)
-      .sort((yearA, yearB) => yearB.localeCompare(yearA));
-    if (years.length && !years.includes(state.selectedDashboardYear)) {
-      state.selectedDashboardYear = years[0];
+    if (state.sharedYears === null) {
+      state.sharedYears = defaultSharedYears();
     }
 
     this._summaries = yearSummaries;
-    this._years = years;
-    this._selectedYear = state.selectedDashboardYear;
+    this._years = computeSharedYears();
+    this._selectedYears = state.sharedYears;
     this._missingVatCustomers = state.allCustomers.filter(
       (customer) => !customer.VatOrPassport && !customer.IgnoreMissingVat,
     );
     this.updateComplete.then(() => {
+      this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
       this.querySelector("calendar-tab")?.load();
     });
   }
 
   #onYearChange(event) {
-    this._selectedYear = event.target.value;
-    state.selectedDashboardYear = this._selectedYear;
+    state.sharedYears = event.target.selectedYears;
+    this._selectedYears = state.sharedYears;
   }
 
   #copyPhone(phone) {
@@ -100,17 +101,49 @@ class DashboardTab extends LitElement {
     `;
   }
 
+  #aggregateRentals() {
+    const activeYears = this._selectedYears;
+    const selectedSummaries = activeYears
+      ? this._summaries.filter((summary) => activeYears.includes(summary.year))
+      : this._summaries;
+
+    if (!selectedSummaries.length) {
+      return null;
+    }
+
+    const rentalMap = new Map();
+    selectedSummaries.forEach((summary) => {
+      summary.rentals.forEach((rental) => {
+        const existing = rentalMap.get(rental.rentalId) || {
+          rentalId: rental.rentalId,
+          rentalName: rental.rentalName,
+          bookingCount: 0,
+          totalDays: 0,
+          totalIncome: 0,
+          totalExpenses: 0,
+        };
+        existing.bookingCount += rental.bookingCount;
+        existing.totalDays += rental.totalDays;
+        existing.totalIncome += rental.totalIncome;
+        existing.totalExpenses += rental.totalExpenses;
+        rentalMap.set(rental.rentalId, existing);
+      });
+    });
+
+    return Array.from(rentalMap.values());
+  }
+
   #renderTotalsCard() {
-    const yearData = this._summaries.find((summary) => summary.year === this._selectedYear);
-    if (!yearData) {
-      return html`<p class="text-muted p-3">No data for this year.</p>`;
+    const aggregated = this.#aggregateRentals();
+    if (!aggregated) {
+      return html`<p class="text-muted p-3">No data for this selection.</p>`;
     }
 
     let totalBookings = 0;
     let totalDays = 0;
     let totalIncome = 0;
     let totalExpenses = 0;
-    yearData.rentals.forEach((rentalSummary) => {
+    aggregated.forEach((rentalSummary) => {
       totalBookings += rentalSummary.bookingCount;
       totalDays += rentalSummary.totalDays;
       totalIncome += rentalSummary.totalIncome;
@@ -118,7 +151,7 @@ class DashboardTab extends LitElement {
     });
     const totalDiff = totalIncome - totalExpenses;
 
-    const rows = yearData.rentals
+    const rows = aggregated
       .filter(
         (rental) =>
           rental.bookingCount > 0 || rental.totalIncome > 0 || rental.totalExpenses > 0,
@@ -174,28 +207,18 @@ class DashboardTab extends LitElement {
 
   render() {
     return html`
+      ${filterBar(html`
+        <year-checkbox-dropdown
+          .years=${this._years}
+          @change=${this.#onYearChange}
+        ></year-checkbox-dropdown>
+      `)}
       ${this.#renderMissingVat()}
       <calendar-tab></calendar-tab>
       <div class="row g-3 mt-0">
         <div class="col-12 col-md-6">
           <div class="card">
             <div class="card-header"><i class="bi bi-bar-chart-line me-1"></i> Totals</div>
-            <div class="card-body border-bottom py-3">
-              <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
-                <select
-                  class="form-select form-select-sm w-auto"
-                  @change=${this.#onYearChange}
-                >
-                  ${this._years.map(
-                    (year) => html`
-                      <option value="${year}" .selected=${year === this._selectedYear}>
-                        ${year}
-                      </option>
-                    `,
-                  )}
-                </select>
-              </div>
-            </div>
             ${this.#renderTotalsCard()}
           </div>
         </div>

@@ -141,6 +141,43 @@ export function hideSpinnerReveal(spinnerId, controlsId) {
   }
 }
 
+export function initFixedStrategyDropdown(hostElement) {
+  const toggle = hostElement.querySelector('[data-bs-toggle="dropdown"]');
+  if (toggle && typeof bootstrap !== "undefined") {
+    bootstrap.Dropdown.getOrCreateInstance(toggle, {
+      popperConfig: (defaultConfig) => ({ ...defaultConfig, strategy: "fixed" }),
+    });
+  }
+}
+
+export function computeSharedYears() {
+  const currentYear = new Date().getFullYear();
+  let minYear = currentYear;
+
+  window.state.allBookings.forEach((booking) => {
+    if (booking.ArrivalDate) {
+      const year = parseInt(booking.ArrivalDate.substring(0, 4), 10);
+      if (year && year < minYear) minYear = year;
+    }
+  });
+  window.state.allExpenses.forEach((expense) => {
+    if (expense.Year) {
+      const year = parseInt(expense.Year, 10);
+      if (year && year < minYear) minYear = year;
+    }
+  });
+
+  const years = [];
+  for (let y = currentYear; y >= minYear; y--) {
+    years.push(String(y));
+  }
+  return years;
+}
+
+export function defaultSharedYears() {
+  return [String(new Date().getFullYear())];
+}
+
 export function getCheckedIds(containerId) {
   return Array.prototype.map.call(
     document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`),

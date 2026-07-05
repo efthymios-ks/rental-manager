@@ -1,12 +1,18 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import "../components/customerSelect.js";
+import { filterBar } from "../components/filterBar.js";
 import "../components/rentalFilterDropdown.js";
 import "../components/rentalSelect.js";
 import "../components/yearCheckboxDropdown.js";
-import { extractYearsFromItems } from "../components/yearCheckboxDropdown.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
-import { formatDate, normalizeSearch, updateDurationField } from "../utils.js";
+import {
+  computeSharedYears,
+  defaultSharedYears,
+  formatDate,
+  normalizeSearch,
+  updateDurationField,
+} from "../utils.js";
 
 class BookingsTab extends LitElement {
   static properties = {
@@ -19,8 +25,6 @@ class BookingsTab extends LitElement {
   };
 
   #allBookings = [];
-  #selectedYears = null;
-  #selectedRentalIds = null;
   #searchQuery = "";
   #offRecordOnly = false;
 
@@ -40,7 +44,20 @@ class BookingsTab extends LitElement {
 
   load() {
     this.#allBookings = state.allBookings;
-    this._years = extractYearsFromItems(this.#allBookings, "ArrivalDate");
+    this._years = computeSharedYears();
+    if (state.sharedYears === null) {
+      state.sharedYears = defaultSharedYears();
+    }
+    this.#searchQuery = "";
+    this.#offRecordOnly = false;
+    this.updateComplete.then(() => {
+      this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
+      this.querySelector("rental-filter-dropdown")?.setSelected(state.sharedRentalIds);
+      const searchInput = this.querySelector("#bookingSearchInput");
+      if (searchInput) searchInput.value = "";
+      const offRecordInput = this.querySelector("#bookingOffRecordFilter");
+      if (offRecordInput) offRecordInput.checked = false;
+    });
     this.#applyFilters();
   }
 
@@ -50,17 +67,19 @@ class BookingsTab extends LitElement {
   }
 
   #applyFilters() {
+    const selectedYears = state.sharedYears;
+    const selectedRentalIds = state.sharedRentalIds;
     this._filteredBookings = this.#allBookings.filter((booking) => {
       if (
-        this.#selectedYears !== null &&
-        !this.#selectedYears.includes(booking.ArrivalDate.substring(0, 4))
+        selectedYears !== null &&
+        !selectedYears.includes(booking.ArrivalDate.substring(0, 4))
       ) {
         return false;
       }
 
       if (
-        this.#selectedRentalIds !== null &&
-        !this.#selectedRentalIds.includes(booking.RentalId)
+        selectedRentalIds !== null &&
+        !selectedRentalIds.includes(booking.RentalId)
       ) {
         return false;
       }
@@ -86,12 +105,12 @@ class BookingsTab extends LitElement {
   }
 
   #onYearChange(event) {
-    this.#selectedYears = event.target.selectedYears;
+    state.sharedYears = event.target.selectedYears;
     this.#applyFilters();
   }
 
   #onRentalChange(event) {
-    this.#selectedRentalIds = event.target.selectedIds;
+    state.sharedRentalIds = event.target.selectedIds;
     this.#applyFilters();
   }
 
@@ -551,6 +570,36 @@ class BookingsTab extends LitElement {
 
   render() {
     return html`
+      ${filterBar(html`
+        <year-checkbox-dropdown
+          .years=${this._years}
+          @change=${this.#onYearChange}
+        ></year-checkbox-dropdown>
+        <rental-filter-dropdown
+          .rentals=${state.allRentals}
+          @change=${this.#onRentalChange}
+        ></rental-filter-dropdown>
+        <input
+          type="text"
+          id="bookingSearchInput"
+          class="form-control form-control-sm"
+          style="width: 240px"
+          placeholder="Search customer…"
+          @input=${this.#onSearchInput}
+        />
+        <div class="form-check form-switch mb-0">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            id="bookingOffRecordFilter"
+            @change=${this.#onOffRecordChange}
+          />
+          <label class="form-check-label small text-nowrap" for="bookingOffRecordFilter">
+            Off record only
+          </label>
+        </div>
+      `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-calendar-check me-1"></i> Bookings</span>
@@ -559,41 +608,6 @@ class BookingsTab extends LitElement {
           </button>
         </div>
         ${this.#renderSummaryCards()}
-        <div class="card-body border-bottom py-3">
-          <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
-            <year-checkbox-dropdown
-              .years=${this._years}
-              @change=${this.#onYearChange}
-            ></year-checkbox-dropdown>
-            <rental-filter-dropdown
-              .rentals=${state.allRentals}
-              @change=${this.#onRentalChange}
-            ></rental-filter-dropdown>
-            <div class="w-100 d-lg-none"></div>
-            <div class="input-group input-group-sm flex-grow-1 flex-lg-grow-0" style="max-width:300px">
-              <span class="input-group-text"><i class="bi bi-search"></i></span>
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Search customer…"
-                @input=${this.#onSearchInput}
-              />
-            </div>
-            <div class="w-100 d-lg-none"></div>
-            <div class="form-check form-switch mb-0">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="bookingOffRecordFilter"
-                @change=${this.#onOffRecordChange}
-              />
-              <label class="form-check-label small" for="bookingOffRecordFilter">
-                <i class="bi bi-eye-slash me-1"></i>Off record only
-              </label>
-            </div>
-          </div>
-        </div>
         ${this.#renderList()}
       </div>
       ${this.#renderAddModal()}

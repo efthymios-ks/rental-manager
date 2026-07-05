@@ -1,4 +1,5 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { filterBar } from "../components/filterBar.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
 import { normalizeSearch } from "../utils.js";
@@ -37,6 +38,14 @@ class CustomersTab extends LitElement {
   }
 
   load() {
+    this.#searchQuery = "";
+    this.#vatIgnoredOnly = false;
+    this.updateComplete.then(() => {
+      const searchInput = this.querySelector("#customerSearchInput");
+      if (searchInput) searchInput.value = "";
+      const vatInput = this.querySelector("#customerVatIgnoredFilter");
+      if (vatInput) vatInput.checked = false;
+    });
     this.#applyFilters();
   }
 
@@ -422,6 +431,26 @@ class CustomersTab extends LitElement {
       : html`<p class="text-muted p-3">No customers found.</p>`;
 
     return html`
+      ${filterBar(html`
+        <input
+          type="text"
+          id="customerSearchInput"
+          class="form-control form-control-sm"
+          style="width: 240px"
+          placeholder="Search customer fields..."
+          @input=${this.#onSearch}
+        />
+        <div class="form-check form-switch mb-0">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            id="customerVatIgnoredFilter"
+            @change=${this.#onVatFilterChange}
+          />
+          <label class="form-check-label small text-nowrap" for="customerVatIgnoredFilter">Missing VAT only</label>
+        </div>
+      `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-people me-1"></i> Customers</span>
@@ -430,30 +459,6 @@ class CustomersTab extends LitElement {
           </button>
         </div>
         ${this.#renderSummaryCards()}
-        <div class="card-body border-bottom py-3">
-          <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
-            <div class="input-group input-group-sm flex-grow-1 flex-lg-grow-0" style="max-width: 300px">
-              <span class="input-group-text"><i class="bi bi-search"></i></span>
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Search customer fields..."
-                @input=${this.#onSearch}
-              />
-            </div>
-            <div class="w-100 d-lg-none"></div>
-            <div class="form-check form-switch mb-0">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="customerVatIgnoredFilter"
-                @change=${this.#onVatFilterChange}
-              />
-              <label class="form-check-label small" for="customerVatIgnoredFilter">Missing VAT only</label>
-            </div>
-          </div>
-        </div>
         <div>${listContent}</div>
       </div>
       ${this.#renderAddModal()}

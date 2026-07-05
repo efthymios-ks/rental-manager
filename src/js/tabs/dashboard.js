@@ -183,9 +183,9 @@ class DashboardTab extends LitElement {
 
     return html`
       <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-sm table-borderless mb-0">
-            <thead class="table-light">
+        <div class="table-responsive rm-table-scroll">
+          <table class="table table-sm table-striped rm-table rm-sticky-footer mb-0">
+            <thead class="table-success">
               <tr>
                 <th>Rental</th>
                 <th class="text-center">Bookings</th>
@@ -196,7 +196,7 @@ class DashboardTab extends LitElement {
               </tr>
             </thead>
             <tbody>${rows}</tbody>
-            <tfoot class="table-light fw-bold">
+            <tfoot class="fw-bold">
               <tr>
                 <td>Total</td>
                 <td class="text-center">${totalBookings}</td>

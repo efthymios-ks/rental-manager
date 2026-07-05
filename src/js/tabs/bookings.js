@@ -354,89 +354,66 @@ class BookingsTab extends LitElement {
       return html`<p class="text-muted p-3">No bookings found.</p>`;
     }
 
-    return html`
-      <!-- Desktop layout -->
-      <ul class="list-group list-group-flush d-none d-md-block">
-        ${bookings.map((booking) => {
-          const customer = booking.customer || {};
-          const rental = booking.rental || {};
-          return html`
-            <li class="list-group-item d-flex align-items-center py-2 gap-3">
-              <span class="badge bg-secondary flex-shrink-0">${rental.Name || booking.RentalId}</span>
-              <span class="fw-semibold flex-shrink-0">${customer.FullName || booking.CustomerId}</span>
-              ${booking.OffRecord
-                ? html`<span class="badge bg-dark flex-shrink-0">Off record</span>`
-                : ""}
-              <span class="text-muted small flex-shrink-0">
-                <i class="bi bi-calendar2-arrow me-1"></i>${formatDate(booking.ArrivalDate)}
-                → ${formatDate(booking.DepartureDate)}
-              </span>
-              <span class="badge bg-light text-dark border flex-shrink-0">
-                ${booking.DurationDays} day${booking.DurationDays !== 1 ? "s" : ""}
-              </span>
-              <span class="fw-bold ms-auto flex-shrink-0">${parseFloat(booking.AmountEuros).toFixed(2)}€</span>
-              <div class="d-flex gap-2 flex-shrink-0">
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  @click=${() => this.#openEditModal(booking)}
-                >
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  @click=${() => this.#confirmDelete(booking.Id)}
-                >
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </li>
-          `;
-        })}
-      </ul>
+    const totalDays = bookings.reduce((sum, b) => sum + (parseInt(b.DurationDays) || 0), 0);
+    const totalAmount = bookings.reduce((sum, b) => sum + (parseFloat(b.AmountEuros) || 0), 0);
 
-      <!-- Mobile layout -->
-      <div class="d-md-none d-flex flex-column gap-2 p-2">
-        ${bookings.map((booking) => {
-          const customer = booking.customer || {};
-          const rental = booking.rental || {};
-          return html`
-            <div class="card border rounded-3 px-3 pt-3 pb-2">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge bg-secondary">${rental.Name || booking.RentalId}</span>
-                  ${booking.OffRecord
-                    ? html`<span class="badge bg-dark">Off record</span>`
-                    : ""}
-                </div>
-                <div class="d-flex gap-2">
-                  <button
-                    class="btn btn-sm btn-outline-secondary"
-                    @click=${() => this.#openEditModal(booking)}
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button
-                    class="btn btn-sm btn-outline-danger"
-                    @click=${() => this.#confirmDelete(booking.Id)}
-                  >
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="fw-semibold mb-1">${customer.FullName || booking.CustomerId}</div>
-              <div class="text-muted small mb-1">
-                <i class="bi bi-calendar2-arrow me-1"></i>${formatDate(booking.ArrivalDate)}
-                → ${formatDate(booking.DepartureDate)}
-              </div>
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="badge bg-light text-dark border">
-                  ${booking.DurationDays} day${booking.DurationDays !== 1 ? "s" : ""}
-                </span>
-                <span class="fw-bold">${parseFloat(booking.AmountEuros).toFixed(2)}€</span>
-              </div>
-            </div>
-          `;
-        })}
+    return html`
+      <div class="table-responsive rm-table-scroll">
+        <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+          <thead class="table-success">
+            <tr>
+              <th>Rental</th>
+              <th>Customer</th>
+              <th>Arrival</th>
+              <th>Departure</th>
+              <th class="text-center">Days</th>
+              <th class="text-end">Amount</th>
+              <th class="text-center">Off Record</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bookings.map((booking) => {
+              const customer = booking.customer || {};
+              const rental = booking.rental || {};
+              return html`
+                <tr>
+                  <td class="fw-semibold">${rental.Name || booking.RentalId}</td>
+                  <td>${customer.FullName || booking.CustomerId}</td>
+                  <td>${formatDate(booking.ArrivalDate)}</td>
+                  <td>${formatDate(booking.DepartureDate)}</td>
+                  <td class="text-center">${booking.DurationDays}</td>
+                  <td class="text-end">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
+                  <td class="text-center">
+                    ${booking.OffRecord ? html`<span class="badge bg-dark">Off</span>` : ""}
+                  </td>
+                  <td class="text-end">
+                    <div class="d-flex gap-1 justify-content-end">
+                      <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(booking)}>
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" @click=${() => this.#confirmDelete(booking.Id)}>
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            })}
+          </tbody>
+          <tfoot class="fw-bold">
+            <tr>
+              <td>Total (${bookings.length})</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="text-center">${totalDays}</td>
+              <td class="text-end">${totalAmount.toFixed(2)}€</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     `;
   }

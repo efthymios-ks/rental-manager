@@ -373,58 +373,55 @@ class ExpensesTab extends LitElement {
   }
 
   render() {
-    const listContent = this._filteredExpenses.length
+    const expenses = this._filteredExpenses;
+    const totalAmount = expenses.reduce((sum, e) => sum + (parseFloat(e.AmountEuros) || 0), 0);
+    const listContent = expenses.length
       ? html`
-          <!-- Desktop layout -->
-          <ul class="list-group list-group-flush d-none d-md-block">
-            ${this._filteredExpenses.map((expense) => html`
-              <li class="list-group-item d-flex align-items-center py-2 gap-3">
-                <div class="d-flex gap-1 flex-shrink-0 flex-wrap">
-                  ${expense.rentals.map((rental) => html`<span class="badge bg-secondary">${rental.Name}</span>`)}
-                </div>
-                <span class="fw-semibold flex-shrink-0">${expense.Name}</span>
-                ${expense.DateCreated
-                  ? html`<span class="text-muted small flex-shrink-0"><i class="bi bi-calendar-event me-1"></i>${formatDate(expense.DateCreated)}</span>`
-                  : ""}
-                <span class="fw-bold ms-auto flex-shrink-0">${parseFloat(expense.AmountEuros).toFixed(2)}€</span>
-                <div class="d-flex gap-2 flex-shrink-0">
-                  <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(expense)}>
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger" @click=${() => this.#confirmDelete(expense)}>
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </li>
-            `)}
-          </ul>
-
-          <!-- Mobile layout -->
-          <div class="d-md-none d-flex flex-column gap-2 p-2">
-            ${this._filteredExpenses.map((expense) => html`
-              <div class="card border rounded-3 px-3 pt-3 pb-2">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <div class="d-flex gap-1 flex-wrap">
-                    ${expense.rentals.map((rental) => html`<span class="badge bg-secondary">${rental.Name}</span>`)}
-                  </div>
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(expense)}>
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" @click=${() => this.#confirmDelete(expense)}>
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </div>
-                <div class="fw-semibold mb-1">${expense.Name}</div>
-                <div class="d-flex justify-content-between align-items-center">
-                  ${expense.DateCreated
-                    ? html`<span class="text-muted small"><i class="bi bi-calendar-event me-1"></i>${formatDate(expense.DateCreated)}</span>`
-                    : html`<span></span>`}
-                  <span class="fw-bold">${parseFloat(expense.AmountEuros).toFixed(2)}€</span>
-                </div>
-              </div>
-            `)}
+          <div class="table-responsive rm-table-scroll">
+            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+              <thead class="table-success">
+                <tr>
+                  <th>Name</th>
+                  <th>Rentals</th>
+                  <th>Date</th>
+                  <th class="text-end">Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${expenses.map((expense) => html`
+                  <tr>
+                    <td class="fw-semibold">${expense.Name}</td>
+                    <td>
+                      <div class="d-flex gap-1 flex-nowrap">
+                        ${expense.rentals.map((rental) => html`<span class="badge bg-secondary">${rental.Name}</span>`)}
+                      </div>
+                    </td>
+                    <td>${expense.DateCreated ? formatDate(expense.DateCreated) : ""}</td>
+                    <td class="text-end">${parseFloat(expense.AmountEuros).toFixed(2)}€</td>
+                    <td class="text-end">
+                      <div class="d-flex gap-1 justify-content-end">
+                        <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(expense)}>
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @click=${() => this.#confirmDelete(expense)}>
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `)}
+              </tbody>
+              <tfoot class="fw-bold">
+                <tr>
+                  <td>Total (${expenses.length})</td>
+                  <td></td>
+                  <td></td>
+                  <td class="text-end">${totalAmount.toFixed(2)}€</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         `
       : html`<p class="text-muted p-3">No expenses found.</p>`;

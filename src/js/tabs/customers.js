@@ -367,65 +367,55 @@ class CustomersTab extends LitElement {
   }
 
   render() {
-    const listContent = this._filteredCustomers.length
+    const customers = this._filteredCustomers;
+    const listContent = customers.length
       ? html`
-          <!-- Desktop layout -->
-          <ul class="list-group list-group-flush d-none d-md-block">
-            ${this._filteredCustomers.map((customer) => {
-              const hasBookings = state.allBookings.some((booking) => booking.CustomerId === customer.Id);
-              return html`
-                <li class="list-group-item d-flex align-items-center py-2 gap-3 ${customer.Rating === 1 ? "bg-success bg-opacity-25" : customer.Rating === -1 ? "bg-danger bg-opacity-25" : ""}">
-                  <span class="fw-semibold flex-shrink-0">${customer.FullName}</span>
-                  ${customer.PhoneNumber
-                    ? html`<span class="text-muted small flex-shrink-0"><i class="bi bi-telephone me-1"></i>${customer.PhoneNumber}</span>`
-                    : ""}
-                  <div class="d-flex gap-2 flex-shrink-0 ms-auto">
-                    <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(customer)}>
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button
-                      class="btn btn-sm btn-outline-danger"
-                      @click=${() => this.#confirmDelete(customer)}
-                      ?disabled=${hasBookings}
-                      title=${hasBookings ? "Has bookings" : ""}
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </li>
-              `;
-            })}
-          </ul>
-
-          <!-- Mobile layout -->
-          <div class="d-md-none d-flex flex-column gap-2 p-2">
-            ${this._filteredCustomers.map((customer) => {
-              const hasBookings = state.allBookings.some((booking) => booking.CustomerId === customer.Id);
-              const ratingClass = customer.Rating === 1 ? "border-success bg-success bg-opacity-10" : customer.Rating === -1 ? "border-danger bg-danger bg-opacity-10" : "";
-              return html`
-                <div class="card border rounded-3 px-3 pt-3 pb-2 ${ratingClass}">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="fw-semibold">${customer.FullName}</span>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(customer)}>
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button
-                        class="btn btn-sm btn-outline-danger"
-                        @click=${() => this.#confirmDelete(customer)}
-                        ?disabled=${hasBookings}
-                        title=${hasBookings ? "Has bookings" : ""}
-                      >
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                  ${customer.PhoneNumber
-                    ? html`<div class="text-muted small"><i class="bi bi-telephone me-1"></i>${customer.PhoneNumber}</div>`
-                    : ""}
-                </div>
-              `;
-            })}
+          <div class="table-responsive rm-table-scroll">
+            <table class="table table-sm table-striped table-hover rm-table mb-0">
+              <thead class="table-success">
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>VAT / Passport</th>
+                  <th class="text-center">Rating</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${customers.map((customer) => {
+                  const hasBookings = state.allBookings.some((booking) => booking.CustomerId === customer.Id);
+                  return html`
+                    <tr>
+                      <td class="fw-semibold">${customer.FullName}</td>
+                      <td>${customer.PhoneNumber || ""}</td>
+                      <td>${customer.VatOrPassport || ""}</td>
+                      <td class="text-center">
+                        ${customer.Rating === 1
+                          ? html`<span class="badge bg-success">Good</span>`
+                          : customer.Rating === -1
+                          ? html`<span class="badge bg-danger">Bad</span>`
+                          : ""}
+                      </td>
+                      <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                          <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(customer)}>
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                          <button
+                            class="btn btn-sm btn-outline-danger"
+                            @click=${() => this.#confirmDelete(customer)}
+                            ?disabled=${hasBookings}
+                            title=${hasBookings ? "Has bookings" : ""}
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                })}
+              </tbody>
+            </table>
           </div>
         `
       : html`<p class="text-muted p-3">No customers found.</p>`;

@@ -235,64 +235,48 @@ class RentalsTab extends LitElement {
   render() {
     const listContent = this._rentals.length
       ? html`
-          <!-- Desktop layout -->
-          <ul class="list-group list-group-flush d-none d-md-block">
-            ${this._rentals.map((rental) => {
-              const hasBookings = state.allBookings.some((booking) => booking.RentalId === rental.Id);
-              const hasExpenses = state.allExpenses.some((expense) => expense.RentalIds.includes(rental.Id));
-              const canDelete = !hasBookings && !hasExpenses;
-              return html`
-                <li class="list-group-item d-flex align-items-center py-2 gap-3">
-                  <i class="bi bi-house-fill text-secondary flex-shrink-0"></i>
-                  <span class="fw-semibold">${rental.Name}</span>
-                  <div class="d-flex gap-2 flex-shrink-0 ms-auto">
-                    <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(rental)}>
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button
-                      class="btn btn-sm btn-outline-danger"
-                      @click=${() => this.#confirmDelete(rental)}
-                      ?disabled=${!canDelete}
-                      title=${!canDelete ? "Has bookings or expenses" : ""}
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </li>
-              `;
-            })}
-          </ul>
-
-          <!-- Mobile layout -->
-          <div class="d-md-none d-flex flex-column gap-2 p-2">
-            ${this._rentals.map((rental) => {
-              const hasBookings = state.allBookings.some((booking) => booking.RentalId === rental.Id);
-              const hasExpenses = state.allExpenses.some((expense) => expense.RentalIds.includes(rental.Id));
-              const canDelete = !hasBookings && !hasExpenses;
-              return html`
-                <div class="card border rounded-3 px-3 py-2">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
-                      <i class="bi bi-house-fill text-secondary"></i>
-                      <span class="fw-semibold">${rental.Name}</span>
-                    </div>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(rental)}>
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button
-                        class="btn btn-sm btn-outline-danger"
-                        @click=${() => this.#confirmDelete(rental)}
-                        ?disabled=${!canDelete}
-                        title=${!canDelete ? "Has bookings or expenses" : ""}
-                      >
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              `;
-            })}
+          <div class="table-responsive rm-table-scroll">
+            <table class="table table-sm table-striped table-hover rm-table mb-0">
+              <thead class="table-success">
+                <tr>
+                  <th>Name</th>
+                  <th>Property Registry #</th>
+                  <th class="text-end">Floor Area (m²)</th>
+                  <th>Electricity Supply #</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this._rentals.map((rental) => {
+                  const hasBookings = state.allBookings.some((booking) => booking.RentalId === rental.Id);
+                  const hasExpenses = state.allExpenses.some((expense) => expense.RentalIds.includes(rental.Id));
+                  const canDelete = !hasBookings && !hasExpenses;
+                  return html`
+                    <tr>
+                      <td class="fw-semibold">${rental.Name}</td>
+                      <td>${rental.PropertyRegistryNumber || ""}</td>
+                      <td class="text-end">${rental.FloorArea || ""}</td>
+                      <td>${rental.ElectricitySupplyNumber || ""}</td>
+                      <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                          <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(rental)}>
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                          <button
+                            class="btn btn-sm btn-outline-danger"
+                            @click=${() => this.#confirmDelete(rental)}
+                            ?disabled=${!canDelete}
+                            title=${!canDelete ? "Has bookings or expenses" : ""}
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                })}
+              </tbody>
+            </table>
           </div>
         `
       : html`<p class="text-muted p-3">No rentals yet.</p>`;

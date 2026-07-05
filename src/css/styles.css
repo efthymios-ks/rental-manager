@@ -17,6 +17,34 @@ app-header {
   }
 }
 
+/* Reusable table with sticky header (always) and optional sticky footer.
+   Compose with Bootstrap: <div class="table-responsive rm-table-scroll">
+                             <table class="table table-striped rm-table rm-sticky-footer">
+   Header color via any Bootstrap .table-* variant on <thead>. */
+.rm-table-scroll {
+  overflow: auto;
+  max-height: 70vh;
+}
+
+.rm-table th,
+.rm-table td {
+  white-space: nowrap;
+}
+
+.rm-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.rm-table.rm-sticky-footer tfoot > tr > * {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bs-tertiary-bg);
+  border-top: 1px solid var(--bs-border-color);
+}
+
 /* Card styling */
 .card {
   border: none;

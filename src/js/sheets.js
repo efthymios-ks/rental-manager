@@ -75,7 +75,7 @@ async function getAllData() {
 // ── Public: entity CRUD ────────────────────────────────────────────────────
 
 async function addRental(rental) {
-  await append(SCHEMA.rentals, encodeRental({ ...rental, Id: newId() }));
+  await append(SCHEMA.rentals, { Id: newId(), ...encodeRental(rental) });
 }
 
 async function updateRental(rentalId, rental) {
@@ -89,7 +89,7 @@ async function deleteRental(rentalId) {
 }
 
 async function addCustomer(customer) {
-  await append(SCHEMA.customers, encodeCustomer({ ...customer, Id: newId() }));
+  await append(SCHEMA.customers, { Id: newId(), ...encodeCustomer(customer) });
 }
 
 async function updateCustomer(customerId, customer) {
@@ -103,7 +103,7 @@ async function deleteCustomer(customerId) {
 }
 
 async function addBooking(booking) {
-  await append(SCHEMA.bookings, encodeBooking({ ...booking, Id: newId() }));
+  await append(SCHEMA.bookings, { Id: newId(), ...encodeBooking(booking) });
 }
 
 async function updateBooking(bookingId, booking) {
@@ -117,7 +117,7 @@ async function deleteBooking(bookingId) {
 }
 
 async function addExpense(expense) {
-  await append(SCHEMA.expenses, encodeExpense({ ...expense, Id: newId() }));
+  await append(SCHEMA.expenses, { Id: newId(), ...encodeExpense(expense) });
 }
 
 async function updateExpense(expenseId, expense) {
@@ -134,7 +134,6 @@ async function deleteExpense(expenseId) {
 
 function encodeRental(rental) {
   return {
-    Id: rental.Id,
     Name: rental.Name,
     PropertyRegistryNumber: rental.PropertyRegistryNumber || "",
     FloorArea: rental.FloorArea || "",
@@ -144,7 +143,6 @@ function encodeRental(rental) {
 
 function encodeCustomer(customer) {
   return {
-    Id: customer.Id,
     FullName: customer.FullName,
     VatOrPassport: customer.VatOrPassport || "",
     PhoneNumber: String(customer.PhoneNumber || ""),
@@ -156,7 +154,6 @@ function encodeCustomer(customer) {
 
 function encodeBooking(booking) {
   return {
-    Id: booking.Id,
     RentalId: booking.RentalId,
     CustomerId: booking.CustomerId,
     ArrivalDate: booking.ArrivalDate,
@@ -172,7 +169,6 @@ function encodeExpense(expense) {
     ? expense.RentalIds.join(",")
     : expense.RentalIds || "";
   return {
-    Id: expense.Id,
     RentalIds: rentalIds,
     Name: expense.Name,
     AmountEuros: expense.AmountEuros,

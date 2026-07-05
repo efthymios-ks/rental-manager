@@ -133,13 +133,17 @@ class ExportTab extends LitElement {
   render() {
     const previewContent = this._filteredBookings.length
       ? html`
-          <!-- Desktop layout -->
-          <div class="table-responsive d-none d-md-block">
-            <table class="table table-sm table-bordered table-hover text-center align-middle">
-              <thead class="table-light fw-bold">
+          <div class="table-responsive rm-table-scroll">
+            <table class="table table-sm table-striped table-hover rm-table mb-0">
+              <thead class="table-success">
                 <tr>
-                  <th>Πελάτης</th><th>ΑΦΜ / ΑΔ</th><th>Κατοικία</th>
-                  <th>Έσοδα</th><th>Άφιξη</th><th>Αναχώρηση</th><th>Μέρες</th>
+                  <th>Πελάτης</th>
+                  <th>ΑΦΜ / ΑΔ</th>
+                  <th>Κατοικία</th>
+                  <th class="text-end">Έσοδα</th>
+                  <th>Άφιξη</th>
+                  <th>Αναχώρηση</th>
+                  <th class="text-center">Μέρες</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,40 +154,15 @@ class ExportTab extends LitElement {
                       <td>${customer.FullName || "—"}</td>
                       <td>${String(customer.VatOrPassport || "—")}</td>
                       <td>${(booking.rental && booking.rental.Name) || "—"}</td>
-                      <td>${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
+                      <td class="text-end">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
                       <td>${booking.ArrivalDate}</td>
                       <td>${booking.DepartureDate}</td>
-                      <td>${booking.DurationDays}</td>
+                      <td class="text-center">${booking.DurationDays}</td>
                     </tr>
                   `;
                 })}
               </tbody>
             </table>
-          </div>
-
-          <!-- Mobile layout -->
-          <div class="d-md-none d-flex flex-column gap-2 p-2">
-            ${this._filteredBookings.map((booking) => {
-              const customer = booking.customer || {};
-              return html`
-                <div class="card border rounded-3 px-3 pt-3 pb-2">
-                  <div class="mb-2">
-                    ${booking.rental ? html`<span class="badge bg-secondary">${booking.rental.Name}</span>` : ""}
-                  </div>
-                  <div class="fw-semibold mb-1">${customer.FullName || "—"}</div>
-                  ${customer.VatOrPassport
-                    ? html`<div class="text-muted small mb-1"><i class="bi bi-card-text me-1"></i>${String(customer.VatOrPassport)}</div>`
-                    : ""}
-                  <div class="text-muted small mb-1">
-                    <i class="bi bi-calendar2-arrow me-1"></i>${booking.ArrivalDate} → ${booking.DepartureDate}
-                  </div>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge bg-light text-dark border">${booking.DurationDays} day${booking.DurationDays !== 1 ? "s" : ""}</span>
-                    <span class="fw-bold">${parseFloat(booking.AmountEuros).toFixed(2)}€</span>
-                  </div>
-                </div>
-              `;
-            })}
           </div>
         `
       : html`<p class="text-muted p-3">No bookings for this range.</p>`;

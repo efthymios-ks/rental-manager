@@ -1,12 +1,15 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "../components/filterBar.js";
 import "../components/noteAutocomplete.js";
+import "../components/rentalFilterDropdown.js";
+import "../components/yearCheckboxDropdown.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
-import { normalizeSearch, uniqueNotes } from "../utils.js";
+import { subscribeLanguage, t } from "../translations.js";
+import { computeSharedYears, normalizeSearch, uniqueNotes } from "../utils.js";
 
 function validateCustomerForm(fullName) {
-  return fullName ? [] : ["Full name is required."];
+  return fullName ? [] : [t("customers.error.fullNameRequired", "Full name is required.")];
 }
 
 class CustomersTab extends LitElement {
@@ -22,6 +25,9 @@ class CustomersTab extends LitElement {
 
   #searchQuery = "";
   #vatIgnoredOnly = false;
+  #selectedYears = null;
+  #selectedRentalIds = null;
+  #years = [];
 
   constructor() {
     super();
@@ -38,14 +44,35 @@ class CustomersTab extends LitElement {
     return this;
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
+  }
+
   load() {
     this.#searchQuery = "";
     this.#vatIgnoredOnly = false;
+    this.#years = computeSharedYears();
     this.updateComplete.then(() => {
       const searchInput = this.querySelector("#customerSearchInput");
       if (searchInput) searchInput.value = "";
       const vatInput = this.querySelector("#customerVatIgnoredFilter");
       if (vatInput) vatInput.checked = false;
+      const yearWidget = this.querySelector("year-checkbox-dropdown");
+      if (yearWidget) {
+        yearWidget.setSelected(this.#selectedYears ?? this.#years);
+      }
+      const rentalWidget = this.querySelector("rental-filter-dropdown");
+      if (rentalWidget) {
+        rentalWidget.setSelected(
+          this.#selectedRentalIds ?? state.allRentals.map((rental) => rental.Id),
+        );
+      }
     });
     this.#applyFilters();
   }
@@ -56,9 +83,34 @@ class CustomersTab extends LitElement {
   }
 
   #applyFilters() {
+    const selectedYears = this.#selectedYears;
+    const selectedRentalIds = this.#selectedRentalIds;
     this._filteredCustomers = state.allCustomers.filter((customer) => {
       if (this.#vatIgnoredOnly && customer.VatOrPassport) {
         return false;
+      }
+
+      if (selectedYears !== null || selectedRentalIds !== null) {
+        const customerBookings = state.allBookings.filter(
+          (booking) => booking.CustomerId === customer.Id,
+        );
+        if (!customerBookings.length) return false;
+
+        if (
+          selectedYears !== null &&
+          !customerBookings.some((booking) =>
+            selectedYears.includes(booking.ArrivalDate.substring(0, 4)),
+          )
+        ) {
+          return false;
+        }
+
+        if (
+          selectedRentalIds !== null &&
+          !customerBookings.some((booking) => selectedRentalIds.includes(booking.RentalId))
+        ) {
+          return false;
+        }
       }
 
       if (!this.#searchQuery) {
@@ -80,6 +132,16 @@ class CustomersTab extends LitElement {
 
   #onVatFilterChange(event) {
     this.#vatIgnoredOnly = event.target.checked;
+    this.#applyFilters();
+  }
+
+  #onYearChange(event) {
+    this.#selectedYears = event.target.selectedYears;
+    this.#applyFilters();
+  }
+
+  #onRentalChange(event) {
+    this.#selectedRentalIds = event.target.selectedIds;
     this.#applyFilters();
   }
 
@@ -194,9 +256,9 @@ class CustomersTab extends LitElement {
 
   #confirmDelete(customer) {
     showConfirm(
-      "Delete Customer",
-      "Are you sure you want to delete this customer?",
-      "Delete",
+      t("customers.confirmDelete.title", "Delete Customer"),
+      t("customers.confirmDelete.message", "Are you sure you want to delete this customer?"),
+      t("common.delete", "Delete"),
       "btn-danger",
       (done) => {
         window.api.deleteCustomer(customer.Id)
@@ -227,17 +289,17 @@ class CustomersTab extends LitElement {
   #renderRatingButtons(currentRating, onChange) {
     return html`
       <div class="mb-3">
-        <label class="form-label fw-semibold small mb-2"><i class="bi bi-star me-1"></i>Rating</label>
+        <label class="form-label fw-semibold small mb-2"><i class="bi bi-star me-1"></i>${t("customers.field.rating", "Rating")}</label>
         <div class="d-flex gap-2">
           <button type="button"
             class="btn btn-sm ${currentRating === -1 ? "btn-danger" : "btn-outline-danger"}"
             @click=${() => onChange(currentRating === -1 ? 0 : -1)}>
-            <i class="bi bi-hand-thumbs-down${currentRating === -1 ? "-fill" : ""} me-1"></i>Dislike
+            <i class="bi bi-hand-thumbs-down${currentRating === -1 ? "-fill" : ""} me-1"></i>${t("customers.field.rating.dislike", "Dislike")}
           </button>
           <button type="button"
             class="btn btn-sm ${currentRating === 1 ? "btn-success" : "btn-outline-success"}"
             @click=${() => onChange(currentRating === 1 ? 0 : 1)}>
-            <i class="bi bi-hand-thumbs-up${currentRating === 1 ? "-fill" : ""} me-1"></i>Like
+            <i class="bi bi-hand-thumbs-up${currentRating === 1 ? "-fill" : ""} me-1"></i>${t("customers.field.rating.like", "Like")}
           </button>
         </div>
       </div>
@@ -250,21 +312,21 @@ class CustomersTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Add Customer</h5>
+              <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>${t("customers.modal.add.title", "Add Customer")}</h5>
             </div>
             <div class="modal-body">
               <div class="form-floating mb-3">
-                <input type="text" id="addCustomerFullName" class="form-control" placeholder="Full Name" />
-                <label><i class="bi bi-person me-1"></i>Full Name <span class="text-danger">*</span></label>
+                <input type="text" id="addCustomerFullName" class="form-control" placeholder=${t("customers.field.fullName", "Full Name")} />
+                <label><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="addCustomerVat" class="form-control" placeholder="VAT / Passport" />
-                <label><i class="bi bi-card-text me-1"></i>VAT / Passport Number</label>
+                <input type="text" id="addCustomerVat" class="form-control" placeholder=${t("customers.field.vatOrPassport", "VAT / Passport")} />
+                <label><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
               </div>
               <div class="input-group mb-3">
                 <div class="form-floating flex-grow-1">
-                  <input type="text" id="addCustomerPhone" class="form-control" placeholder="Phone" />
-                  <label><i class="bi bi-telephone me-1"></i>Phone Number</label>
+                  <input type="text" id="addCustomerPhone" class="form-control" placeholder=${t("customers.field.phone", "Phone")} />
+                  <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
                 </div>
                 <button class="btn btn-outline-secondary" type="button" title="Copy phone"
                   @click=${() => this.#copyPhone(this.querySelector("#addCustomerPhone").value)}>
@@ -275,22 +337,24 @@ class CustomersTab extends LitElement {
               <note-autocomplete
                 id="addCustomerNotes"
                 class="mb-3"
+                label=${t("customers.field.notes", "Notes")}
+                placeholder=${t("customers.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allCustomers)}
               ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="addCustomerIgnoreMissingVat" />
                 <label class="form-check-label" for="addCustomerIgnoreMissingVat">
-                  <i class="bi bi-slash-circle me-1"></i>Ignore missing VAT
+                  <i class="bi bi-slash-circle me-1"></i>${t("customers.field.ignoreMissingVat", "Ignore missing VAT")}
                 </label>
               </div>
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>Cancel</button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" @click=${this.#submitAdd} ?disabled=${this._addSaving}>
                 ${this._addSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -305,22 +369,22 @@ class CustomersTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Customer</h5>
+              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>${t("customers.modal.edit.title", "Edit Customer")}</h5>
             </div>
             <div class="modal-body">
               <input type="hidden" id="editCustomerId" />
               <div class="form-floating mb-3">
-                <input type="text" id="editCustomerFullName" class="form-control" placeholder="Full Name" />
-                <label><i class="bi bi-person me-1"></i>Full Name <span class="text-danger">*</span></label>
+                <input type="text" id="editCustomerFullName" class="form-control" placeholder=${t("customers.field.fullName", "Full Name")} />
+                <label><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="editCustomerVat" class="form-control" placeholder="VAT / Passport" />
-                <label><i class="bi bi-card-text me-1"></i>VAT / Passport Number</label>
+                <input type="text" id="editCustomerVat" class="form-control" placeholder=${t("customers.field.vatOrPassport", "VAT / Passport")} />
+                <label><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
               </div>
               <div class="input-group mb-3">
                 <div class="form-floating flex-grow-1">
-                  <input type="text" id="editCustomerPhone" class="form-control" placeholder="Phone" />
-                  <label><i class="bi bi-telephone me-1"></i>Phone Number</label>
+                  <input type="text" id="editCustomerPhone" class="form-control" placeholder=${t("customers.field.phone", "Phone")} />
+                  <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
                 </div>
                 <button class="btn btn-outline-secondary" type="button" title="Copy phone"
                   @click=${() => this.#copyPhone(this.querySelector("#editCustomerPhone").value)}>
@@ -331,22 +395,24 @@ class CustomersTab extends LitElement {
               <note-autocomplete
                 id="editCustomerNotes"
                 class="mb-3"
+                label=${t("customers.field.notes", "Notes")}
+                placeholder=${t("customers.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allCustomers)}
               ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="editCustomerIgnoreMissingVat" />
                 <label class="form-check-label" for="editCustomerIgnoreMissingVat">
-                  <i class="bi bi-slash-circle me-1"></i>Ignore missing VAT
+                  <i class="bi bi-slash-circle me-1"></i>${t("customers.field.ignoreMissingVat", "Ignore missing VAT")}
                 </label>
               </div>
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>Cancel</button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" @click=${this.#submitEdit} ?disabled=${this._editSaving}>
                 ${this._editSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -363,10 +429,10 @@ class CustomersTab extends LitElement {
             <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
               <thead class="table-success">
                 <tr>
-                  <th>Name</th>
-                  <th class="text-center">Phone</th>
-                  <th class="text-center">VAT / Passport</th>
-                  <th class="text-center">Rating</th>
+                  <th>${t("customers.table.name", "Name")}</th>
+                  <th class="text-center">${t("customers.table.phone", "Phone")}</th>
+                  <th class="text-center">${t("customers.table.vatOrPassport", "VAT / Passport")}</th>
+                  <th class="text-center">${t("customers.table.rating", "Rating")}</th>
                   <th class="text-center"></th>
                 </tr>
               </thead>
@@ -380,9 +446,9 @@ class CustomersTab extends LitElement {
                       <td class="text-center">${customer.VatOrPassport || ""}</td>
                       <td class="text-center">
                         ${customer.Rating === 1
-                          ? html`<span class="badge bg-success">Good</span>`
+                          ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
                           : customer.Rating === -1
-                          ? html`<span class="badge bg-danger">Bad</span>`
+                          ? html`<span class="badge bg-danger">${t("customers.table.rating.bad", "Bad")}</span>`
                           : ""}
                       </td>
                       <td class="text-center">
@@ -394,7 +460,7 @@ class CustomersTab extends LitElement {
                             class="btn btn-sm btn-outline-danger"
                             @click=${() => this.#confirmDelete(customer)}
                             ?disabled=${hasBookings}
-                            title=${hasBookings ? "Has bookings" : ""}
+                            title=${hasBookings ? t("customers.table.hasBookings", "Has bookings") : ""}
                           >
                             <i class="bi bi-trash"></i>
                           </button>
@@ -406,7 +472,7 @@ class CustomersTab extends LitElement {
               </tbody>
               <tfoot class="fw-bold">
                 <tr>
-                  <td>Total (${customers.length})</td>
+                  <td>${t("common.total", "Total")} (${customers.length})</td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
@@ -416,16 +482,25 @@ class CustomersTab extends LitElement {
             </table>
           </div>
         `
-      : html`<p class="text-muted p-3">No customers found.</p>`;
+      : html`<p class="text-muted p-3">${t("customers.empty", "No customers found.")}</p>`;
 
     return html`
       ${filterBar(html`
+        <year-checkbox-dropdown
+          .years=${this.#years}
+          .defaultAll=${true}
+          @change=${this.#onYearChange}
+        ></year-checkbox-dropdown>
+        <rental-filter-dropdown
+          .rentals=${state.allRentals}
+          @change=${this.#onRentalChange}
+        ></rental-filter-dropdown>
         <input
           type="text"
           id="customerSearchInput"
           class="form-control form-control-sm"
           style="width: 240px"
-          placeholder="Search customer fields..."
+          placeholder=${t("customers.filter.search.placeholder", "Search...")}
           @input=${this.#onSearch}
         />
         <div class="form-check form-switch mb-0">
@@ -436,14 +511,14 @@ class CustomersTab extends LitElement {
             id="customerVatIgnoredFilter"
             @change=${this.#onVatFilterChange}
           />
-          <label class="form-check-label small text-nowrap" for="customerVatIgnoredFilter">Missing VAT only</label>
+          <label class="form-check-label small text-nowrap" for="customerVatIgnoredFilter">${t("customers.filter.missingVatOnly", "Missing VAT only")}</label>
         </div>
       `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-people me-1"></i> Customers</span>
+          <span><i class="bi bi-people me-1"></i> ${t("customers.title", "Customers")}</span>
           <button class="btn btn-success btn-sm" @click=${this.#openAddModal}>
-            <i class="bi bi-plus-lg me-1"></i>Add
+            <i class="bi bi-plus-lg me-1"></i>${t("common.add", "Add")}
           </button>
         </div>
         <div>${listContent}</div>

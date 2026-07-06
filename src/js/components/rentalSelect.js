@@ -1,4 +1,5 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { subscribeLanguage, t } from "../translations.js";
 
 class RentalSelect extends LitElement {
   static properties = {
@@ -14,6 +15,16 @@ class RentalSelect extends LitElement {
 
   createRenderRoot() {
     return this;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
   }
 
   get value() {
@@ -32,7 +43,7 @@ class RentalSelect extends LitElement {
             `,
           )}
         </select>
-        <label><i class="bi bi-house-door me-1"></i>Rental</label>
+        <label><i class="bi bi-house-door me-1"></i>${t("common.field.rental", "Rental")}</label>
       </div>
     `;
   }

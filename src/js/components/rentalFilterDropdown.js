@@ -1,4 +1,5 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { subscribeLanguage } from "../translations.js";
 import { formatRentalsLabel, initFixedStrategyDropdown } from "../utils.js";
 
 class RentalFilterDropdown extends LitElement {
@@ -35,6 +36,16 @@ class RentalFilterDropdown extends LitElement {
 
   firstUpdated() {
     initFixedStrategyDropdown(this);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
   }
 
   get selectedIds() {

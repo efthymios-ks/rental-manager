@@ -6,6 +6,7 @@ import "../components/rentalFilterDropdown.js";
 import "../components/yearCheckboxDropdown.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
+import { subscribeLanguage, t } from "../translations.js";
 import {
   computeSharedYears,
   defaultSharedYears,
@@ -19,15 +20,15 @@ import {
 function validateExpenseForm(name, amountEuros, date) {
   const errors = [];
   if (!name) {
-    errors.push("Please enter a name.");
+    errors.push(t("expenses.error.nameRequired", "Please enter a name."));
   }
 
   if (!date) {
-    errors.push("Please select a date.");
+    errors.push(t("expenses.error.dateRequired", "Please select a date."));
   }
 
   if (isNaN(amountEuros) || amountEuros <= 0) {
-    errors.push("Amount must be greater than 0.");
+    errors.push(t("expenses.error.amountPositive", "Amount must be greater than 0."));
   }
 
   return errors;
@@ -57,6 +58,16 @@ class ExpensesTab extends LitElement {
 
   createRenderRoot() {
     return this;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
   }
 
   load() {
@@ -204,9 +215,9 @@ class ExpensesTab extends LitElement {
 
   #confirmDelete(expense) {
     showConfirm(
-      "Delete Expense",
-      "Are you sure you want to delete this expense?",
-      "Delete",
+      t("expenses.confirmDelete.title", "Delete Expense"),
+      t("expenses.confirmDelete.message", "Are you sure you want to delete this expense?"),
+      t("common.delete", "Delete"),
       "btn-danger",
       (done) => {
         window.api.deleteExpense(expense.Id)
@@ -240,42 +251,44 @@ class ExpensesTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Add Expense</h5>
+              <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>${t("expenses.modal.add.title", "Add Expense")}</h5>
             </div>
             <div class="modal-body">
               <note-autocomplete
                 id="addExpenseName"
                 class="mb-3"
-                label="Name"
-                placeholder="Name"
+                label=${t("expenses.field.name", "Name")}
+                placeholder=${t("expenses.field.name", "Name")}
                 icon="bi-tag"
                 .suggestions=${uniqueByField(state.allExpenses, "Name")}
               ></note-autocomplete>
               <div class="mb-3">
-                <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>Rentals</label>
+                <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
                 <rental-checkboxes id="addExpenseRentalCheckboxes"></rental-checkboxes>
               </div>
               <div class="form-floating mb-3">
                 <input type="number" id="addExpenseAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
-                <label><i class="bi bi-currency-euro me-1"></i>Amount (€)</label>
+                <label><i class="bi bi-currency-euro me-1"></i>${t("expenses.field.amount", "Amount (€)")}</label>
               </div>
               <div class="form-floating mb-3">
-                <input type="date" id="addExpenseDate" class="form-control" placeholder="Date" />
-                <label><i class="bi bi-calendar-event me-1"></i>Date</label>
+                <input type="date" id="addExpenseDate" class="form-control" placeholder=${t("expenses.field.date", "Date")} />
+                <label><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
               </div>
               <note-autocomplete
                 id="addExpenseNotes"
                 class="mb-3"
+                label=${t("expenses.field.notes", "Notes")}
+                placeholder=${t("expenses.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allExpenses)}
               ></note-autocomplete>
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>Cancel</button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" @click=${this.#submitAdd} ?disabled=${this._addSaving}>
                 ${this._addSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -290,43 +303,45 @@ class ExpensesTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Expense</h5>
+              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>${t("expenses.modal.edit.title", "Edit Expense")}</h5>
             </div>
             <div class="modal-body">
               <input type="hidden" id="editExpenseId" />
               <note-autocomplete
                 id="editExpenseName"
                 class="mb-3"
-                label="Name"
-                placeholder="Name"
+                label=${t("expenses.field.name", "Name")}
+                placeholder=${t("expenses.field.name", "Name")}
                 icon="bi-tag"
                 .suggestions=${uniqueByField(state.allExpenses, "Name")}
               ></note-autocomplete>
               <div class="mb-3">
-                <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>Rentals</label>
+                <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
                 <rental-checkboxes id="editExpenseRentalCheckboxes"></rental-checkboxes>
               </div>
               <div class="form-floating mb-3">
                 <input type="number" id="editExpenseAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
-                <label><i class="bi bi-currency-euro me-1"></i>Amount (€)</label>
+                <label><i class="bi bi-currency-euro me-1"></i>${t("expenses.field.amount", "Amount (€)")}</label>
               </div>
               <div class="form-floating mb-3">
-                <input type="date" id="editExpenseDate" class="form-control" placeholder="Date" />
-                <label><i class="bi bi-calendar-event me-1"></i>Date</label>
+                <input type="date" id="editExpenseDate" class="form-control" placeholder=${t("expenses.field.date", "Date")} />
+                <label><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
               </div>
               <note-autocomplete
                 id="editExpenseNotes"
                 class="mb-3"
+                label=${t("expenses.field.notes", "Notes")}
+                placeholder=${t("expenses.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allExpenses)}
               ></note-autocomplete>
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>Cancel</button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" @click=${this.#submitEdit} ?disabled=${this._editSaving}>
                 ${this._editSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -345,10 +360,10 @@ class ExpensesTab extends LitElement {
             <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
               <thead class="table-success">
                 <tr>
-                  <th>Name</th>
-                  <th class="text-center">Rentals</th>
-                  <th class="text-center">Date</th>
-                  <th class="text-center">Amount</th>
+                  <th>${t("expenses.table.name", "Name")}</th>
+                  <th class="text-center">${t("expenses.table.rentals", "Rentals")}</th>
+                  <th class="text-center">${t("expenses.table.date", "Date")}</th>
+                  <th class="text-center">${t("expenses.table.amount", "Amount")}</th>
                   <th class="text-center"></th>
                 </tr>
               </thead>
@@ -376,7 +391,7 @@ class ExpensesTab extends LitElement {
               </tbody>
               <tfoot class="fw-bold">
                 <tr>
-                  <td>Total (${expenses.length})</td>
+                  <td>${t("common.total", "Total")} (${expenses.length})</td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
                   <td class="text-center">${totalAmount.toFixed(2)}€</td>
@@ -386,7 +401,7 @@ class ExpensesTab extends LitElement {
             </table>
           </div>
         `
-      : html`<p class="text-muted p-3">No expenses found.</p>`;
+      : html`<p class="text-muted p-3">${t("expenses.empty", "No expenses found.")}</p>`;
 
     return html`
       ${filterBar(html`
@@ -401,9 +416,9 @@ class ExpensesTab extends LitElement {
       `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-receipt me-1"></i> Expenses</span>
+          <span><i class="bi bi-receipt me-1"></i> ${t("expenses.title", "Expenses")}</span>
           <button class="btn btn-success btn-sm" @click=${this.#openAddModal}>
-            <i class="bi bi-plus-lg me-1"></i>Add
+            <i class="bi bi-plus-lg me-1"></i>${t("common.add", "Add")}
           </button>
         </div>
         <div>${listContent}</div>

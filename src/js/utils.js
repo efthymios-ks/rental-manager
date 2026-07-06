@@ -155,8 +155,9 @@ export function uniqueNotes(items) {
 
 export function formatRentalsLabel(rentals, totalRentalCount) {
   const count = rentals.length;
-  if (count === 0) return "No Rentals";
-  if (count === totalRentalCount) return "All Rentals";
+  const t = window.t || ((key, fallback) => fallback);
+  if (count === 0) return t("filter.rentals.none", "No Rentals");
+  if (count === totalRentalCount) return t("filter.rentals.all", "All Rentals");
   if (count <= 2) {
     return rentals
       .map((rental) => rental.Name)
@@ -164,7 +165,7 @@ export function formatRentalsLabel(rentals, totalRentalCount) {
       .join(", ");
   }
 
-  return `${count} Rentals`;
+  return t("filter.rentals.n", `${count} Rentals`, { n: count });
 }
 
 export function initFixedStrategyDropdown(hostElement) {

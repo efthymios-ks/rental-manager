@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import "./translations.js";
 import "./components/appHeader.js";
 import "./components/calendar.js";
 import "./components/loadingOverlay.js";

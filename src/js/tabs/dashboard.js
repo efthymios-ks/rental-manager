@@ -3,6 +3,7 @@ import { filterBar } from "../components/filterBar.js";
 import "../components/rentalFilterDropdown.js";
 import "../components/yearCheckboxDropdown.js";
 import { state } from "../state.js";
+import { subscribeLanguage, t } from "../translations.js";
 import { computeSharedYears, defaultSharedYears } from "../utils.js";
 
 class DashboardTab extends LitElement {
@@ -23,6 +24,16 @@ class DashboardTab extends LitElement {
 
   createRenderRoot() {
     return this;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
   }
 
   load() {
@@ -145,7 +156,7 @@ class DashboardTab extends LitElement {
   #renderTotalsCard() {
     const aggregated = this.#aggregateRentals();
     if (!aggregated) {
-      return html`<p class="text-muted p-3">No data for this selection.</p>`;
+      return html`<p class="text-muted p-3">${t("dashboard.totals.empty", "No data for this selection.")}</p>`;
     }
 
     let totalBookings = 0;
@@ -187,18 +198,18 @@ class DashboardTab extends LitElement {
           <table class="table table-sm table-striped rm-table rm-sticky-footer mb-0">
             <thead class="table-success">
               <tr>
-                <th>Rental</th>
-                <th class="text-center">Bookings</th>
-                <th class="text-center">Days</th>
-                <th class="text-center">Income</th>
-                <th class="text-center">Expenses</th>
-                <th class="text-end">Difference</th>
+                <th>${t("dashboard.totals.header.rental", "Rental")}</th>
+                <th class="text-center">${t("dashboard.totals.header.bookings", "Bookings")}</th>
+                <th class="text-center">${t("dashboard.totals.header.days", "Days")}</th>
+                <th class="text-center">${t("dashboard.totals.header.income", "Income")}</th>
+                <th class="text-center">${t("dashboard.totals.header.expenses", "Expenses")}</th>
+                <th class="text-end">${t("dashboard.totals.header.difference", "Difference")}</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
             <tfoot class="fw-bold">
               <tr>
-                <td>Total</td>
+                <td>${t("dashboard.totals.total", "Total")}</td>
                 <td class="text-center">${totalBookings}</td>
                 <td class="text-center">${totalDays}</td>
                 <td class="text-center text-success">${totalIncome.toFixed(2)}€</td>
@@ -230,7 +241,7 @@ class DashboardTab extends LitElement {
       <div class="row g-3 mt-0">
         <div class="col-12 col-md-6">
           <div class="card">
-            <div class="card-header"><i class="bi bi-bar-chart-line me-1"></i> Totals</div>
+            <div class="card-header"><i class="bi bi-bar-chart-line me-1"></i> ${t("dashboard.totals.title", "Totals")}</div>
             ${this.#renderTotalsCard()}
           </div>
         </div>

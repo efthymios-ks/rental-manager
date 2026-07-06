@@ -17,8 +17,9 @@ app-header {
   }
 }
 
-/* Note autocomplete input (ported from expense-tracker) */
-note-autocomplete {
+/* Custom elements that need block layout so width utilities work */
+note-autocomplete,
+language-picker {
   display: block;
 }
 
@@ -72,6 +73,7 @@ note-autocomplete {
 .rm-table th,
 .rm-table td {
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .rm-table thead th {

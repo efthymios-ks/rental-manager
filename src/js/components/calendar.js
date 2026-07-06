@@ -3,12 +3,8 @@ import { filterBar } from "./filterBar.js";
 import "./monthPicker.js";
 import "./rentalFilterDropdown.js";
 import { state } from "../state.js";
+import { subscribeLanguage, t } from "../translations.js";
 import { computeCalendarYears, todayStr } from "../utils.js";
-
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
 
 class CalendarTab extends LitElement {
   static properties = {
@@ -33,6 +29,16 @@ class CalendarTab extends LitElement {
 
   createRenderRoot() {
     return this;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
   }
 
   load() {
@@ -245,7 +251,7 @@ class CalendarTab extends LitElement {
         >&#8594;</a>
       `)}
       <div class="card">
-        <div class="card-header"><i class="bi bi-calendar3 me-1"></i> Calendar</div>
+        <div class="card-header"><i class="bi bi-calendar3 me-1"></i> ${t("calendar.title", "Calendar")}</div>
         <div class="card-body p-3" @click=${this.#handleCalendarClick}>
           <div class="cal-gantt">
             <div class="cal-gantt-row cal-gantt-header">

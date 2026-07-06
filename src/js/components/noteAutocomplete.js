@@ -6,6 +6,7 @@ class NoteAutocomplete extends LitElement {
     label: {},
     placeholder: {},
     icon: {},
+    plain: { type: Boolean },
     _value: { state: true },
     _open: { state: true },
     _filtered: { state: true },
@@ -17,6 +18,7 @@ class NoteAutocomplete extends LitElement {
     this.label = "Notes";
     this.placeholder = "Notes";
     this.icon = "bi-chat-left-text";
+    this.plain = false;
     this._value = "";
     this._open = false;
     this._filtered = [];
@@ -62,23 +64,43 @@ class NoteAutocomplete extends LitElement {
     this.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  updated() {
+    const dropdown = this.querySelector(".note-ac-dropdown");
+    const input = this.querySelector("input");
+    if (dropdown && input) {
+      const rect = input.getBoundingClientRect();
+      dropdown.style.position = "fixed";
+      dropdown.style.top = `${rect.bottom}px`;
+      dropdown.style.left = `${rect.left}px`;
+      dropdown.style.width = `${rect.width}px`;
+      dropdown.style.right = "auto";
+      dropdown.style.maxWidth = "none";
+    }
+  }
+
   render() {
     const open = this._open && this._filtered.length > 0;
+    const sizeClass = this.plain ? " form-control-sm" : "";
+    const inputEl = html`
+      <input
+        type="text"
+        class="form-control${sizeClass}${open ? " note-ac-open" : ""}"
+        placeholder=${this.placeholder}
+        autocomplete="off"
+        .value=${this._value}
+        @focus=${this.#onFocus}
+        @input=${this.#onInput}
+        @blur=${this.#onBlur}
+      />
+    `;
     return html`
       <div style="position:relative">
-        <div class="form-floating">
-          <input
-            type="text"
-            class="form-control${open ? " note-ac-open" : ""}"
-            placeholder=${this.placeholder}
-            autocomplete="off"
-            .value=${this._value}
-            @focus=${this.#onFocus}
-            @input=${this.#onInput}
-            @blur=${this.#onBlur}
-          />
-          <label><i class="bi ${this.icon} me-1"></i>${this.label}</label>
-        </div>
+        ${this.plain ? inputEl : html`
+          <div class="form-floating">
+            ${inputEl}
+            <label><i class="bi ${this.icon} me-1"></i>${this.label}</label>
+          </div>
+        `}
         ${open ? html`
           <div class="note-ac-dropdown">
             ${this._filtered.map((note) => html`

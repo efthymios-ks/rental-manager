@@ -1,15 +1,18 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { subscribeLanguage, t } from "../translations.js";
 import { initFixedStrategyDropdown } from "../utils.js";
 
 class YearCheckboxDropdown extends LitElement {
   static properties = {
     years: { type: Array },
+    defaultAll: { type: Boolean },
     _checkedYears: { state: true },
   };
 
   constructor() {
     super();
     this.years = [];
+    this.defaultAll = false;
     this._checkedYears = [];
     this._userInitialized = false;
   }
@@ -24,9 +27,13 @@ class YearCheckboxDropdown extends LitElement {
       this.years.length &&
       !this._userInitialized
     ) {
-      const currentYear = String(new Date().getFullYear());
-      const defaultYear = this.years.includes(currentYear) ? currentYear : this.years[0];
-      this._checkedYears = [defaultYear];
+      if (this.defaultAll) {
+        this._checkedYears = [...this.years];
+      } else {
+        const currentYear = String(new Date().getFullYear());
+        const defaultYear = this.years.includes(currentYear) ? currentYear : this.years[0];
+        this._checkedYears = [defaultYear];
+      }
     }
   }
 
@@ -39,6 +46,16 @@ class YearCheckboxDropdown extends LitElement {
     initFixedStrategyDropdown(this);
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
+  }
+
   get selectedYears() {
     return this._checkedYears.length === this.years.length ? null : this._checkedYears;
   }
@@ -46,18 +63,18 @@ class YearCheckboxDropdown extends LitElement {
   get #label() {
     const count = this._checkedYears.length;
     if (count === this.years.length) {
-      return "All Years";
+      return t("filter.year.all", "All Years");
     }
 
     if (count === 0) {
-      return "No Years";
+      return t("filter.year.none", "No Years");
     }
 
     if (count <= 2) {
       return [...this._checkedYears].sort().join(", ");
     }
 
-    return `${count} Years`;
+    return t("filter.year.n", `${count} Years`, { n: count });
   }
 
   #handleChange(year, checked) {

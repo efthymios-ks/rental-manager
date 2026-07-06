@@ -1,9 +1,10 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
+import { subscribeLanguage, t } from "../translations.js";
 
 function validateRentalForm(name) {
-  return name ? [] : ["Name is required."];
+  return name ? [] : [t("rentals.error.nameRequired", "Name is required.")];
 }
 
 class RentalsTab extends LitElement {
@@ -26,6 +27,16 @@ class RentalsTab extends LitElement {
 
   createRenderRoot() {
     return this;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
   }
 
   load() {
@@ -119,9 +130,9 @@ class RentalsTab extends LitElement {
 
   #confirmDelete(rental) {
     showConfirm(
-      "Delete Rental",
-      "Are you sure you want to delete this rental?",
-      "Delete",
+      t("rentals.confirmDelete.title", "Delete Rental"),
+      t("rentals.confirmDelete.message", "Are you sure you want to delete this rental?"),
+      t("common.delete", "Delete"),
       "btn-danger",
       (done) => {
         window.api.deleteRental(rental.Id)
@@ -155,33 +166,33 @@ class RentalsTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-house-add me-2"></i>Add Rental</h5>
+              <h5 class="modal-title"><i class="bi bi-house-add me-2"></i>${t("rentals.modal.add.title", "Add Rental")}</h5>
             </div>
             <div class="modal-body">
               <div class="form-floating mb-3">
-                <input type="text" id="addRentalName" class="form-control" placeholder="Name" />
-                <label><i class="bi bi-house-door me-1"></i>Name <span class="text-danger">*</span></label>
+                <input type="text" id="addRentalName" class="form-control" placeholder=${t("rentals.field.name", "Name")} />
+                <label><i class="bi bi-house-door me-1"></i>${t("rentals.field.name", "Name")} <span class="text-danger">*</span></label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="addRentalPropertyRegistryNumber" class="form-control" placeholder="Property Registry Number" />
-                <label>Property Registry Number</label>
+                <input type="text" id="addRentalPropertyRegistryNumber" class="form-control" placeholder=${t("rentals.field.propertyRegistry", "Property Registry Number")} />
+                <label>${t("rentals.field.propertyRegistry", "Property Registry Number")}</label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="addRentalFloorArea" class="form-control" placeholder="Floor Area (m²)" />
-                <label>Floor Area (m²)</label>
+                <input type="text" id="addRentalFloorArea" class="form-control" placeholder=${t("rentals.field.floorArea", "Floor Area (m²)")} />
+                <label>${t("rentals.field.floorArea", "Floor Area (m²)")}</label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="addRentalElectricitySupplyNumber" class="form-control" placeholder="Electricity Supply Number" />
-                <label>Electricity Supply Number</label>
+                <input type="text" id="addRentalElectricitySupplyNumber" class="form-control" placeholder=${t("rentals.field.electricitySupply", "Electricity Supply Number")} />
+                <label>${t("rentals.field.electricitySupply", "Electricity Supply Number")}</label>
               </div>
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>Cancel</button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" @click=${this.#submitAdd} ?disabled=${this._addSaving}>
                 ${this._addSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -196,34 +207,34 @@ class RentalsTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Rental</h5>
+              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>${t("rentals.modal.edit.title", "Edit Rental")}</h5>
             </div>
             <div class="modal-body">
               <input type="hidden" id="editRentalId" />
               <div class="form-floating mb-3">
-                <input type="text" id="editRentalName" class="form-control" placeholder="Name" />
-                <label><i class="bi bi-house-door me-1"></i>Name <span class="text-danger">*</span></label>
+                <input type="text" id="editRentalName" class="form-control" placeholder=${t("rentals.field.name", "Name")} />
+                <label><i class="bi bi-house-door me-1"></i>${t("rentals.field.name", "Name")} <span class="text-danger">*</span></label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="editRentalPropertyRegistryNumber" class="form-control" placeholder="Property Registry Number" />
-                <label>Property Registry Number</label>
+                <input type="text" id="editRentalPropertyRegistryNumber" class="form-control" placeholder=${t("rentals.field.propertyRegistry", "Property Registry Number")} />
+                <label>${t("rentals.field.propertyRegistry", "Property Registry Number")}</label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="editRentalFloorArea" class="form-control" placeholder="Floor Area (m²)" />
-                <label>Floor Area (m²)</label>
+                <input type="text" id="editRentalFloorArea" class="form-control" placeholder=${t("rentals.field.floorArea", "Floor Area (m²)")} />
+                <label>${t("rentals.field.floorArea", "Floor Area (m²)")}</label>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="editRentalElectricitySupplyNumber" class="form-control" placeholder="Electricity Supply Number" />
-                <label>Electricity Supply Number</label>
+                <input type="text" id="editRentalElectricitySupplyNumber" class="form-control" placeholder=${t("rentals.field.electricitySupply", "Electricity Supply Number")} />
+                <label>${t("rentals.field.electricitySupply", "Electricity Supply Number")}</label>
               </div>
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>Cancel</button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" @click=${this.#submitEdit} ?disabled=${this._editSaving}>
                 ${this._editSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -239,10 +250,10 @@ class RentalsTab extends LitElement {
             <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
               <thead class="table-success">
                 <tr>
-                  <th>Name</th>
-                  <th class="text-center">Property Registry #</th>
-                  <th class="text-center">Floor Area (m²)</th>
-                  <th class="text-center">Electricity Supply #</th>
+                  <th>${t("rentals.table.name", "Name")}</th>
+                  <th class="text-center">${t("rentals.table.propertyRegistry", "Property Registry #")}</th>
+                  <th class="text-center">${t("rentals.table.floorArea", "Floor Area (m²)")}</th>
+                  <th class="text-center">${t("rentals.table.electricitySupply", "Electricity Supply #")}</th>
                   <th class="text-center"></th>
                 </tr>
               </thead>
@@ -266,7 +277,7 @@ class RentalsTab extends LitElement {
                             class="btn btn-sm btn-outline-danger"
                             @click=${() => this.#confirmDelete(rental)}
                             ?disabled=${!canDelete}
-                            title=${!canDelete ? "Has bookings or expenses" : ""}
+                            title=${!canDelete ? t("rentals.table.hasReferences", "Has bookings or expenses") : ""}
                           >
                             <i class="bi bi-trash"></i>
                           </button>
@@ -278,7 +289,7 @@ class RentalsTab extends LitElement {
               </tbody>
               <tfoot class="fw-bold">
                 <tr>
-                  <td>Total (${this._rentals.length})</td>
+                  <td>${t("common.total", "Total")} (${this._rentals.length})</td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
@@ -288,14 +299,14 @@ class RentalsTab extends LitElement {
             </table>
           </div>
         `
-      : html`<p class="text-muted p-3">No rentals yet.</p>`;
+      : html`<p class="text-muted p-3">${t("rentals.empty", "No rentals yet.")}</p>`;
 
     return html`
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-house-door me-1"></i> Rentals</span>
+          <span><i class="bi bi-house-door me-1"></i> ${t("rentals.title", "Rentals")}</span>
           <button class="btn btn-success btn-sm" @click=${this.#openAddModal}>
-            <i class="bi bi-plus-lg me-1"></i>Add
+            <i class="bi bi-plus-lg me-1"></i>${t("common.add", "Add")}
           </button>
         </div>
         <div>${listContent}</div>

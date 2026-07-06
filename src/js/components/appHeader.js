@@ -1,4 +1,5 @@
 import { LitElement, html, nothing } from "../../lib/lit.min.js";
+import "./languagePicker.js";
 
 const TABS = [
   { name: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -14,7 +15,7 @@ const navItem = (tab, { dismiss = false } = {}) => html`
   <a href="#" class="nav-link rounded px-3" data-tab="${tab.name}"
     data-bs-dismiss=${dismiss ? "offcanvas" : nothing}
     @click=${(e) => { e.preventDefault(); window.showTab(tab.name); }}>
-    <i class="bi ${tab.icon} me-2"></i>${tab.label}
+    <i class="bi ${tab.icon} me-2"></i><span data-translations-key="sidebar.tab.${tab.name}">${tab.label}</span>
   </a>
 `;
 
@@ -33,18 +34,24 @@ class AppHeader extends LitElement {
         <div class="navbar-nav flex-column p-2 flex-grow-1 gap-1">
           ${TABS.map((tab) => navItem(tab))}
         </div>
+        <div class="p-2 border-top border-white border-opacity-25">
+          <language-picker></language-picker>
+        </div>
       </nav>
 
       <!-- Mobile Offcanvas -->
-      <div class="offcanvas offcanvas-start bg-success" tabindex="-1" id="mobileOffcanvas">
+      <div class="offcanvas offcanvas-start bg-success d-flex flex-column" tabindex="-1" id="mobileOffcanvas">
         <div class="offcanvas-header border-bottom border-white border-opacity-25">
           <h6 class="offcanvas-title fw-bold text-white">🏠 Rental Manager</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        <div class="offcanvas-body p-2 navbar-dark">
+        <div class="offcanvas-body p-2 navbar-dark flex-grow-1">
           <nav class="navbar-nav flex-column gap-1">
             ${TABS.map((tab) => navItem(tab, { dismiss: true }))}
           </nav>
+        </div>
+        <div class="p-2 border-top border-white border-opacity-25">
+          <language-picker></language-picker>
         </div>
       </div>
 

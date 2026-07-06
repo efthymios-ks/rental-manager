@@ -7,11 +7,13 @@ import "../components/rentalSelect.js";
 import "../components/yearCheckboxDropdown.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
+import { subscribeLanguage, t } from "../translations.js";
 import {
   computeSharedYears,
   defaultSharedYears,
   formatDate,
   normalizeSearch,
+  uniqueByField,
   uniqueNotes,
   updateDurationField,
 } from "../utils.js";
@@ -42,6 +44,16 @@ class BookingsTab extends LitElement {
 
   createRenderRoot() {
     return this;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
   }
 
   load() {
@@ -165,27 +177,27 @@ class BookingsTab extends LitElement {
   #validateBooking(rentalId, customerId, arrival, departure, amount) {
     const errors = [];
     if (!rentalId) {
-      errors.push("Please select a rental.");
+      errors.push(t("bookings.error.rentalRequired", "Please select a rental."));
     }
 
     if (!customerId) {
-      errors.push("Please select a customer.");
+      errors.push(t("bookings.error.customerRequired", "Please select a customer."));
     }
 
     if (!arrival) {
-      errors.push("Please select an arrival date.");
+      errors.push(t("bookings.error.arrivalRequired", "Please select an arrival date."));
     }
 
     if (!departure) {
-      errors.push("Please select a departure date.");
+      errors.push(t("bookings.error.departureRequired", "Please select a departure date."));
     }
 
     if (arrival && departure && arrival >= departure) {
-      errors.push("Departure must be after arrival.");
+      errors.push(t("bookings.error.departureAfterArrival", "Departure must be after arrival."));
     }
 
     if (isNaN(amount) || amount <= 0) {
-      errors.push("Amount must be greater than 0.");
+      errors.push(t("bookings.error.amountPositive", "Amount must be greater than 0."));
     }
 
     return errors;
@@ -264,9 +276,9 @@ class BookingsTab extends LitElement {
 
   #confirmDelete(bookingId) {
     showConfirm(
-      "Delete Booking",
-      "Are you sure you want to delete this booking?",
-      "Delete",
+      t("bookings.confirmDelete.title", "Delete Booking"),
+      t("bookings.confirmDelete.message", "Are you sure you want to delete this booking?"),
+      t("common.delete", "Delete"),
       "btn-danger",
       (done) => {
         window.api
@@ -301,7 +313,7 @@ class BookingsTab extends LitElement {
   #renderList() {
     const bookings = this._filteredBookings;
     if (!bookings.length) {
-      return html`<p class="text-muted p-3">No bookings found.</p>`;
+      return html`<p class="text-muted p-3">${t("bookings.empty", "No bookings found.")}</p>`;
     }
 
     const totalDays = bookings.reduce((sum, b) => sum + (parseInt(b.DurationDays) || 0), 0);
@@ -312,13 +324,13 @@ class BookingsTab extends LitElement {
         <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
           <thead class="table-success">
             <tr>
-              <th>Rental</th>
-              <th class="text-center">Customer</th>
-              <th class="text-center">Arrival</th>
-              <th class="text-center">Departure</th>
-              <th class="text-center">Days</th>
-              <th class="text-center">Amount</th>
-              <th class="text-center">Off Record</th>
+              <th>${t("bookings.table.rental", "Rental")}</th>
+              <th class="text-center">${t("bookings.table.customer", "Customer")}</th>
+              <th class="text-center">${t("bookings.table.arrival", "Arrival")}</th>
+              <th class="text-center">${t("bookings.table.departure", "Departure")}</th>
+              <th class="text-center">${t("bookings.table.days", "Days")}</th>
+              <th class="text-center">${t("bookings.table.amount", "Amount")}</th>
+              <th class="text-center">${t("bookings.table.offRecord", "Off Record")}</th>
               <th class="text-center"></th>
             </tr>
           </thead>
@@ -335,7 +347,7 @@ class BookingsTab extends LitElement {
                   <td class="text-center">${booking.DurationDays}</td>
                   <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
                   <td class="text-center">
-                    ${booking.OffRecord ? html`<span class="badge bg-dark">Off</span>` : ""}
+                    ${booking.OffRecord ? html`<span class="badge bg-dark">${t("bookings.table.offRecord.short", "Off")}</span>` : ""}
                   </td>
                   <td class="text-center">
                     <div class="d-flex gap-1 justify-content-center">
@@ -353,7 +365,7 @@ class BookingsTab extends LitElement {
           </tbody>
           <tfoot class="fw-bold">
             <tr>
-              <td>Total (${bookings.length})</td>
+              <td>${t("common.total", "Total")} (${bookings.length})</td>
               <td class="text-center"></td>
               <td class="text-center"></td>
               <td class="text-center"></td>
@@ -374,7 +386,7 @@ class BookingsTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>Add Booking</h5>
+              <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>${t("bookings.modal.add.title", "Add Booking")}</h5>
             </div>
             <div class="modal-body">
               <rental-select id="addBookingRental"></rental-select>
@@ -382,48 +394,50 @@ class BookingsTab extends LitElement {
               <div class="row mb-3">
                 <div class="col">
                   <div class="form-floating">
-                    <input type="date" id="addBookingArrival" class="form-control" placeholder="Arrival"
+                    <input type="date" id="addBookingArrival" class="form-control" placeholder=${t("bookings.field.arrival", "Arrival")}
                       @input=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-in-right me-1"></i>Arrival</label>
+                    <label><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
                   </div>
                 </div>
                 <div class="col">
                   <div class="form-floating">
-                    <input type="date" id="addBookingDeparture" class="form-control" placeholder="Departure"
+                    <input type="date" id="addBookingDeparture" class="form-control" placeholder=${t("bookings.field.departure", "Departure")}
                       @input=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-right me-1"></i>Departure</label>
+                    <label><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
                   </div>
                 </div>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="addBookingDuration" class="form-control" placeholder="Duration" readonly />
-                <label><i class="bi bi-moon-stars me-1"></i>Duration</label>
+                <input type="text" id="addBookingDuration" class="form-control" placeholder=${t("bookings.field.duration", "Duration")} readonly />
+                <label><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="number" id="addBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
-                <label><i class="bi bi-currency-euro me-1"></i>Amount Paid</label>
+                <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
               </div>
               <note-autocomplete
                 id="addBookingNotes"
                 class="mb-3"
+                label=${t("bookings.field.notes", "Notes")}
+                placeholder=${t("bookings.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allBookings)}
               ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="addBookingOffRecord" />
                 <label class="form-check-label" for="addBookingOffRecord">
-                  <i class="bi bi-eye-slash me-1"></i>Off record
+                  <i class="bi bi-eye-slash me-1"></i>${t("bookings.field.offRecord", "Off record")}
                 </label>
               </div>
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" id="addBookingCancelBtn" data-bs-dismiss="modal"
-                ?disabled=${this._addSaving}>Cancel</button>
+                ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" id="addBookingSaveBtn" @click=${this.#submitAdd}
                 ?disabled=${this._addSaving}>
                 ${this._addSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -438,7 +452,7 @@ class BookingsTab extends LitElement {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Booking</h5>
+              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>${t("bookings.modal.edit.title", "Edit Booking")}</h5>
             </div>
             <div class="modal-body">
               <input type="hidden" id="editBookingId" />
@@ -447,48 +461,50 @@ class BookingsTab extends LitElement {
               <div class="row mb-3">
                 <div class="col">
                   <div class="form-floating">
-                    <input type="date" id="editBookingArrival" class="form-control" placeholder="Arrival"
+                    <input type="date" id="editBookingArrival" class="form-control" placeholder=${t("bookings.field.arrival", "Arrival")}
                       @input=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-in-right me-1"></i>Arrival</label>
+                    <label><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
                   </div>
                 </div>
                 <div class="col">
                   <div class="form-floating">
-                    <input type="date" id="editBookingDeparture" class="form-control" placeholder="Departure"
+                    <input type="date" id="editBookingDeparture" class="form-control" placeholder=${t("bookings.field.departure", "Departure")}
                       @input=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-right me-1"></i>Departure</label>
+                    <label><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
                   </div>
                 </div>
               </div>
               <div class="form-floating mb-3">
-                <input type="text" id="editBookingDuration" class="form-control" placeholder="Duration" readonly />
-                <label><i class="bi bi-moon-stars me-1"></i>Duration</label>
+                <input type="text" id="editBookingDuration" class="form-control" placeholder=${t("bookings.field.duration", "Duration")} readonly />
+                <label><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="number" id="editBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
-                <label><i class="bi bi-currency-euro me-1"></i>Amount Paid</label>
+                <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
               </div>
               <note-autocomplete
                 id="editBookingNotes"
                 class="mb-3"
+                label=${t("bookings.field.notes", "Notes")}
+                placeholder=${t("bookings.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allBookings)}
               ></note-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="editBookingOffRecord" />
                 <label class="form-check-label" for="editBookingOffRecord">
-                  <i class="bi bi-eye-slash me-1"></i>Off record
+                  <i class="bi bi-eye-slash me-1"></i>${t("bookings.field.offRecord", "Off record")}
                 </label>
               </div>
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" id="editBookingCancelBtn" data-bs-dismiss="modal"
-                ?disabled=${this._editSaving}>Cancel</button>
+                ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
               <button class="btn btn-success" id="editBookingSaveBtn" @click=${this.#submitEdit}
                 ?disabled=${this._editSaving}>
                 ${this._editSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>Saving…`
-                  : html`<i class="bi bi-check-lg me-1"></i>Save`}
+                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
+                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
               </button>
             </div>
           </div>
@@ -508,14 +524,14 @@ class BookingsTab extends LitElement {
           .rentals=${state.allRentals}
           @change=${this.#onRentalChange}
         ></rental-filter-dropdown>
-        <input
-          type="text"
+        <note-autocomplete
           id="bookingSearchInput"
-          class="form-control form-control-sm"
           style="width: 240px"
-          placeholder="Search customer…"
+          .plain=${true}
+          placeholder=${t("bookings.filter.search.placeholder", "Search customer...")}
+          .suggestions=${uniqueByField(state.allCustomers, "FullName")}
           @input=${this.#onSearchInput}
-        />
+        ></note-autocomplete>
         <div class="form-check form-switch mb-0">
           <input
             class="form-check-input"
@@ -525,15 +541,15 @@ class BookingsTab extends LitElement {
             @change=${this.#onOffRecordChange}
           />
           <label class="form-check-label small text-nowrap" for="bookingOffRecordFilter">
-            Off record only
+            ${t("bookings.filter.offRecord", "Off record only")}
           </label>
         </div>
       `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-calendar-check me-1"></i> Bookings</span>
+          <span><i class="bi bi-calendar-check me-1"></i> ${t("bookings.title", "Bookings")}</span>
           <button class="btn btn-success btn-sm" @click=${this.#openAddModal}>
-            <i class="bi bi-plus-lg me-1"></i>Add
+            <i class="bi bi-plus-lg me-1"></i>${t("common.add", "Add")}
           </button>
         </div>
         ${this.#renderList()}

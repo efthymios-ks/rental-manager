@@ -1,4 +1,5 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { subscribeLanguage, t } from "../translations.js";
 import { initFixedStrategyDropdown } from "../utils.js";
 
 const MONTH_NAMES = [
@@ -26,6 +27,20 @@ class MonthPicker extends LitElement {
 
   firstUpdated() {
     initFixedStrategyDropdown(this);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
+  }
+
+  #monthName(idx) {
+    return t(`calendar.month.${idx}`, MONTH_NAMES[idx]);
   }
 
   #emitChange() {
@@ -57,12 +72,12 @@ class MonthPicker extends LitElement {
           data-bs-toggle="dropdown"
           data-bs-auto-close="outside"
         >
-          ${MONTH_NAMES[this.month]} ${this.year}
+          ${this.#monthName(this.month)} ${this.year}
         </button>
         <div class="dropdown-menu p-2" style="min-width: 260px">
           <div class="d-flex gap-2">
             <div class="flex-fill">
-              <div class="text-muted small mb-1 fw-semibold text-uppercase">Year</div>
+              <div class="text-muted small mb-1 fw-semibold">${t("calendar.picker.year", "Year")}</div>
               <div style="max-height: 200px; overflow-y: auto">
                 ${this.years.map(
                   (year) => html`
@@ -76,15 +91,15 @@ class MonthPicker extends LitElement {
               </div>
             </div>
             <div class="flex-fill">
-              <div class="text-muted small mb-1 fw-semibold text-uppercase">Month</div>
+              <div class="text-muted small mb-1 fw-semibold">${t("calendar.picker.month", "Month")}</div>
               <div style="max-height: 200px; overflow-y: auto">
                 ${MONTH_NAMES.map(
-                  (name, idx) => html`
+                  (_name, idx) => html`
                     <button
                       type="button"
                       class="dropdown-item ${idx === this.month ? "active" : ""}"
                       @click=${(event) => this.#selectMonth(idx, event)}
-                    >${name}</button>
+                    >${this.#monthName(idx)}</button>
                   `,
                 )}
               </div>

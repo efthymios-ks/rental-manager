@@ -1,4 +1,6 @@
 import { LitElement, html } from "../../lib/lit.min.js";
+import { subscribeLanguage } from "../translations.js";
+import { formatRentalsLabel } from "../utils.js";
 
 class RentalCheckboxes extends LitElement {
   static properties = {
@@ -18,6 +20,16 @@ class RentalCheckboxes extends LitElement {
     return this;
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubLang?.();
+  }
+
   willUpdate(changedProperties) {
     if (changedProperties.has("rentals") || changedProperties.has("initialIds")) {
       const allSelected = !this.initialIds || this.initialIds.length === 0;
@@ -30,18 +42,8 @@ class RentalCheckboxes extends LitElement {
   }
 
   get #label() {
-    if (this._checkedIds.length === this.rentals.length) {
-      return "All Rentals";
-    }
-
-    if (this._checkedIds.length === 0) {
-      return "No Rentals";
-    }
-
-    return this.rentals
-      .filter((rental) => this._checkedIds.includes(rental.Id))
-      .map((rental) => rental.Name)
-      .join(", ");
+    const selected = this.rentals.filter((rental) => this._checkedIds.includes(rental.Id));
+    return formatRentalsLabel(selected, this.rentals.length);
   }
 
   #handleChange(rentalId, checked) {

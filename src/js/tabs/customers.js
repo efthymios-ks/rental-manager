@@ -498,7 +498,7 @@ class CustomersTab extends LitElement {
         <input
           type="text"
           id="customerSearchInput"
-          class="form-control form-control-sm"
+          class="form-control form-control-sm flex-shrink-0"
           style="width: 240px"
           placeholder=${t("customers.filter.search.placeholder", "Search...")}
           @input=${this.#onSearch}

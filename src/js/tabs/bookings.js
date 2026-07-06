@@ -526,6 +526,7 @@ class BookingsTab extends LitElement {
         ></rental-filter-dropdown>
         <note-autocomplete
           id="bookingSearchInput"
+          class="flex-shrink-0"
           style="width: 240px"
           .plain=${true}
           placeholder=${t("bookings.filter.search.placeholder", "Search customer...")}

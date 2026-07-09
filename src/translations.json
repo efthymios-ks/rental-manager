@@ -26,6 +26,7 @@
       "dashboard.totals.header.difference": "Difference",
       "dashboard.totals.total": "Total",
       "dashboard.totals.empty": "No data for this selection.",
+      "dashboard.missingVat.title": "Customers Missing VAT / Passport",
 
       "calendar.title": "Calendar",
       "calendar.picker.year": "Year",
@@ -185,6 +186,7 @@
       "dashboard.totals.header.difference": "Διαφορά",
       "dashboard.totals.total": "Σύνολο",
       "dashboard.totals.empty": "Δεν υπάρχουν δεδομένα.",
+      "dashboard.missingVat.title": "Πελάτες χωρίς ΑΦΜ / Διαβατήριο",
 
       "calendar.title": "Ημερολόγιο",
       "calendar.picker.year": "Έτος",

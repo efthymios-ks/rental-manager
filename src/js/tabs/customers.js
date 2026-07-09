@@ -6,7 +6,11 @@ import "../components/yearCheckboxDropdown.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
 import { subscribeLanguage, t } from "../translations.js";
-import { computeSharedYears, normalizeSearch, uniqueNotes } from "../utils.js";
+import { computeSharedYears, defaultSharedYears, normalizeSearch, uniqueNotes } from "../utils.js";
+
+function normalizePhone(raw) {
+  return raw.replace(/\s/g, "");
+}
 
 function validateCustomerForm(fullName) {
   return fullName ? [] : [t("customers.error.fullNameRequired", "Full name is required.")];
@@ -25,8 +29,6 @@ class CustomersTab extends LitElement {
 
   #searchQuery = "";
   #vatIgnoredOnly = false;
-  #selectedYears = null;
-  #selectedRentalIds = null;
   #years = [];
 
   constructor() {
@@ -58,21 +60,18 @@ class CustomersTab extends LitElement {
     this.#searchQuery = "";
     this.#vatIgnoredOnly = false;
     this.#years = computeSharedYears();
+    if (state.sharedYears === null) {
+      state.sharedYears = defaultSharedYears();
+    }
     this.updateComplete.then(() => {
       const searchInput = this.querySelector("#customerSearchInput");
       if (searchInput) searchInput.value = "";
       const vatInput = this.querySelector("#customerVatIgnoredFilter");
       if (vatInput) vatInput.checked = false;
-      const yearWidget = this.querySelector("year-checkbox-dropdown");
-      if (yearWidget) {
-        yearWidget.setSelected(this.#selectedYears ?? this.#years);
-      }
-      const rentalWidget = this.querySelector("rental-filter-dropdown");
-      if (rentalWidget) {
-        rentalWidget.setSelected(
-          this.#selectedRentalIds ?? state.allRentals.map((rental) => rental.Id),
-        );
-      }
+      this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
+      this.querySelector("rental-filter-dropdown")?.setSelected(
+        state.sharedRentalIds ?? state.allRentals.map((r) => r.Id),
+      );
     });
     this.#applyFilters();
   }
@@ -83,8 +82,8 @@ class CustomersTab extends LitElement {
   }
 
   #applyFilters() {
-    const selectedYears = this.#selectedYears;
-    const selectedRentalIds = this.#selectedRentalIds;
+    const selectedYears = state.sharedYears;
+    const selectedRentalIds = state.sharedRentalIds;
     this._filteredCustomers = state.allCustomers.filter((customer) => {
       if (this.#vatIgnoredOnly && customer.VatOrPassport) {
         return false;
@@ -136,12 +135,12 @@ class CustomersTab extends LitElement {
   }
 
   #onYearChange(event) {
-    this.#selectedYears = event.target.selectedYears;
+    state.sharedYears = event.target.selectedYears;
     this.#applyFilters();
   }
 
   #onRentalChange(event) {
-    this.#selectedRentalIds = event.target.selectedIds;
+    state.sharedRentalIds = event.target.selectedIds;
     this.#applyFilters();
   }
 
@@ -190,7 +189,7 @@ class CustomersTab extends LitElement {
   async #submitAdd() {
     const fullName = this.querySelector("#addCustomerFullName").value.trim();
     const vatOrPassport = this.querySelector("#addCustomerVat").value.trim();
-    const phoneNumber = this.querySelector("#addCustomerPhone").value.trim();
+    const phoneNumber = normalizePhone(this.querySelector("#addCustomerPhone").value);
     const notes = this.querySelector("#addCustomerNotes").value.trim();
     const ignoreMissingVat = this.querySelector("#addCustomerIgnoreMissingVat").checked;
     const rating = this._addRating;
@@ -224,7 +223,7 @@ class CustomersTab extends LitElement {
     const customerId = this.querySelector("#editCustomerId").value;
     const fullName = this.querySelector("#editCustomerFullName").value.trim();
     const vatOrPassport = this.querySelector("#editCustomerVat").value.trim();
-    const phoneNumber = this.querySelector("#editCustomerPhone").value.trim();
+    const phoneNumber = normalizePhone(this.querySelector("#editCustomerPhone").value);
     const notes = this.querySelector("#editCustomerNotes").value.trim();
     const ignoreMissingVat = this.querySelector("#editCustomerIgnoreMissingVat").checked;
     const rating = this._editRating;

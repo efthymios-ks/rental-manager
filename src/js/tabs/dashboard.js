@@ -47,9 +47,18 @@ class DashboardTab extends LitElement {
     this._summaries = yearSummaries;
     this._years = computeSharedYears();
     this._selectedYears = state.sharedYears;
-    this._missingVatCustomers = state.allCustomers.filter(
-      (customer) => !customer.VatOrPassport && !customer.IgnoreMissingVat,
-    );
+    const rentalById = Object.fromEntries(state.allRentals.map((r) => [r.Id, r.Name]));
+    const rentalsByCustomer = {};
+    for (const booking of state.allBookings) {
+      if (!rentalsByCustomer[booking.CustomerId]) rentalsByCustomer[booking.CustomerId] = new Set();
+      rentalsByCustomer[booking.CustomerId].add(rentalById[booking.RentalId]);
+    }
+    this._missingVatCustomers = state.allCustomers
+      .filter((customer) => !customer.VatOrPassport && !customer.IgnoreMissingVat)
+      .map((customer) => ({
+        ...customer,
+        rentalNames: [...(rentalsByCustomer[customer.Id] ?? [])].filter(Boolean),
+      }));
     this.updateComplete.then(() => {
       this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
       this.querySelector("rental-filter-dropdown")?.setSelected(state.sharedRentalIds);
@@ -85,16 +94,21 @@ class DashboardTab extends LitElement {
     return html`
       <div class="card border-warning mb-3">
         <div class="card-header bg-warning text-dark fw-semibold">
-          <i class="bi bi-exclamation-triangle me-1"></i> Customers Missing VAT / Passport
+          <i class="bi bi-exclamation-triangle me-1"></i> ${t("dashboard.missingVat.title", "Customers Missing VAT / Passport")}
           (${this._missingVatCustomers.length})
         </div>
         <ul class="list-group list-group-flush">
           ${this._missingVatCustomers.map(
             (customer) => html`
               <li
-                class="list-group-item d-flex justify-content-between align-items-center py-2"
+                class="list-group-item d-flex justify-content-between align-items-start py-2"
               >
-                <span class="fw-semibold">${customer.FullName}</span>
+                <span class="d-flex flex-column">
+                  <span class="fw-semibold">${customer.FullName}</span>
+                  ${customer.rentalNames.length
+                    ? html`<span class="small text-muted fst-italic">${customer.rentalNames.join(", ")}</span>`
+                    : ""}
+                </span>
                 ${customer.PhoneNumber
                   ? html`
                       <span class="small text-muted d-flex align-items-center gap-1">

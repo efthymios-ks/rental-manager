@@ -29,7 +29,7 @@ class AppHeader extends LitElement {
       <!-- Desktop Sidebar -->
       <nav class="d-none d-md-flex flex-column bg-success flex-shrink-0 position-sticky top-0 vh-100 overflow-auto navbar-dark" style="width: 220px">
         <div class="px-3 py-3 fw-bold text-white border-bottom border-white border-opacity-25 small">
-          🏠 Rental Manager
+          <img src="favicon.svg" width="20" height="20" alt="" style="vertical-align:-3px" class="me-1">Rental Manager
         </div>
         <div class="navbar-nav flex-column p-2 flex-grow-1 gap-1">
           ${TABS.map((tab) => navItem(tab))}
@@ -42,7 +42,7 @@ class AppHeader extends LitElement {
       <!-- Mobile Offcanvas -->
       <div class="offcanvas offcanvas-start bg-success d-flex flex-column" tabindex="-1" id="mobileOffcanvas">
         <div class="offcanvas-header border-bottom border-white border-opacity-25">
-          <h6 class="offcanvas-title fw-bold text-white">🏠 Rental Manager</h6>
+          <h6 class="offcanvas-title fw-bold text-white"><img src="favicon.svg" width="20" height="20" alt="" style="vertical-align:-3px" class="me-1">Rental Manager</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body p-2 navbar-dark flex-grow-1">
@@ -58,7 +58,7 @@ class AppHeader extends LitElement {
       <!-- Mobile Top Navbar -->
       <nav class="navbar navbar-dark bg-success d-md-none position-fixed top-0 start-0 end-0" style="z-index: 1030">
         <div class="container-fluid">
-          <span class="navbar-brand fw-bold">🏠 Rental Manager</span>
+          <span class="navbar-brand fw-bold"><img src="favicon.svg" width="20" height="20" alt="" style="vertical-align:-3px" class="me-1">Rental Manager</span>
           <button class="navbar-toggler border-0" type="button"
             data-bs-toggle="offcanvas" data-bs-target="#mobileOffcanvas">
             <span class="navbar-toggler-icon"></span>

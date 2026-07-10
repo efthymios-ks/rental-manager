@@ -1,3 +1,5 @@
+import { t } from "./translations.js";
+
 export function showConfirm(title, message, confirmLabel, confirmClass, onConfirm) {
   document.getElementById("confirmModalTitle").textContent = title;
   document.getElementById("confirmModalBody").textContent = message;
@@ -7,12 +9,13 @@ export function showConfirm(title, message, confirmLabel, confirmClass, onConfir
   actionButton.className = `btn btn-sm ${confirmClass}`;
   actionButton.disabled = false;
   if (cancelButton) {
+    cancelButton.textContent = t("common.cancel", "Cancel");
     cancelButton.disabled = false;
   }
 
   actionButton.onclick = () => {
     actionButton.disabled = true;
-    actionButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Deleting…`;
+    actionButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${confirmLabel}…`;
     if (cancelButton) {
       cancelButton.disabled = true;
     }

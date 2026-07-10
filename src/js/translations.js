@@ -14,6 +14,7 @@ async function loadTranslations() {
 }
 
 function applyTranslations() {
+  document.documentElement.lang = _current;
   const keys = (_data[_current] && _data[_current].keys) || {};
   document.querySelectorAll("[data-translations-key]").forEach((element) => {
     const key = element.dataset.translationsKey;

@@ -84,16 +84,40 @@ class ExportTab extends LitElement {
     this.#applyFilters();
   }
 
-  #downloadXlsx() {
+  async #downloadXlsx() {
     const bookings = this._filteredBookings;
     if (!bookings.length) {
       return;
     }
 
-    const headers = ["Πελάτης", "ΑΦΜ / ΑΔ", "Κατοικία", "Έσοδα", "Άφιξη", "Αναχώρηση", "Μέρες"];
-    const dataRows = bookings.map((booking) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(t("bookings.title", "Bookings"));
+
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    worksheet.columns = [
+      { header: t("export.table.customer", "Customer"), width: 30 },
+      { header: t("export.table.vatOrPassport", "VAT / Passport"), width: 18 },
+      { header: t("export.table.rental", "Rental"), width: 18 },
+      { header: t("export.table.income", "Income"), width: 12 },
+      { header: t("export.table.arrival", "Arrival"), width: 14 },
+      { header: t("export.table.departure", "Departure"), width: 14 },
+      { header: t("export.table.days", "Days"), width: 8 },
+    ];
+
+    const headerStyle = {
+      fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FFD9D9D9" } },
+      font: { bold: true },
+      alignment: { horizontal: "center", vertical: "middle" },
+    };
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.fill = headerStyle.fill;
+      cell.font = headerStyle.font;
+      cell.alignment = headerStyle.alignment;
+    });
+
+    for (const booking of bookings) {
       const customer = booking.customer || {};
-      return [
+      const row = worksheet.addRow([
         customer.FullName || "-",
         String(customer.VatOrPassport || "-"),
         (booking.rental && booking.rental.Name) || "-",
@@ -101,25 +125,20 @@ class ExportTab extends LitElement {
         booking.ArrivalDate || "-",
         booking.DepartureDate || "-",
         booking.DurationDays || 0,
-      ];
-    });
-    const worksheet = XLSX.utils.aoa_to_sheet([headers].concat(dataRows));
-    worksheet["!cols"] = [30, 16, 16, 10, 12, 12, 8].map((wch) => ({ wch }));
-    const cellRange = XLSX.utils.decode_range(worksheet["!ref"]);
-    for (let rowIndex = cellRange.s.r; rowIndex <= cellRange.e.r; rowIndex++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: 1 });
-      if (!worksheet[cellAddress]) {
-        continue;
-      }
-
-      worksheet[cellAddress].t = "s";
-      worksheet[cellAddress].v = String(worksheet[cellAddress].v || "");
-      delete worksheet[cellAddress].z;
+      ]);
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+      });
     }
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Bookings");
-    XLSX.writeFile(workbook, `bookings_${this.#fromDate || "export"}_${this.#toDate || ""}.xlsx`);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `bookings_${this.#fromDate || "export"}_${this.#toDate || ""}.xlsx`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   render() {

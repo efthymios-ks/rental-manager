@@ -2,7 +2,7 @@ let _modal = null;
 
 function getModal() {
   if (!_modal) {
-    _modal = new bootstrap.Modal(document.getElementById("loadingModal"));
+    _modal = new coreui.Modal(document.getElementById("loadingModal"));
   }
   return _modal;
 }
@@ -16,7 +16,12 @@ window.loadingModal = {
   },
 
   hide() {
-    getModal().hide();
+    const el = document.getElementById("loadingModal");
+    if (el.classList.contains("show")) {
+      getModal().hide();
+    } else {
+      el.addEventListener("shown.coreui.modal", () => getModal().hide(), { once: true });
+    }
   },
 
   showError(message) {

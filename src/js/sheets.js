@@ -3,7 +3,7 @@ const SHEETS_BASE = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.data
 const SCHEMA = {
   rentals: {
     sheet: "Rentals",
-    columns: ["Id", "Name", "PropertyRegistryNumber", "FloorArea", "ElectricitySupplyNumber"],
+    columns: ["Id", "Name", "Address", "PropertyRegistryNumber", "FloorArea", "ElectricitySupplyNumber", "WaterSupplyNumber", "InternetPhoneNumber", "ExtraInfoJson"],
   },
   customers: {
     sheet: "Customers",
@@ -135,9 +135,13 @@ async function deleteExpense(expenseId) {
 function encodeRental(rental) {
   return {
     Name: rental.Name,
+    Address: rental.Address || "",
     PropertyRegistryNumber: rental.PropertyRegistryNumber || "",
     FloorArea: rental.FloorArea || "",
     ElectricitySupplyNumber: rental.ElectricitySupplyNumber || "",
+    WaterSupplyNumber: rental.WaterSupplyNumber || "",
+    InternetPhoneNumber: rental.InternetPhoneNumber || "",
+    ExtraInfoJson: rental.ExtraInfoJson?.length ? JSON.stringify([...rental.ExtraInfoJson].sort((a, b) => a.key.localeCompare(b.key))) : "",
   };
 }
 
@@ -180,7 +184,10 @@ function encodeExpense(expense) {
 // ── Decoders (storage row → domain) ────────────────────────────────────────
 
 function decodeRental(row) {
-  return { ...row };
+  return {
+    ...row,
+    ExtraInfoJson: row.ExtraInfoJson ? JSON.parse(row.ExtraInfoJson) : [],
+  };
 }
 
 function decodeCustomer(row) {

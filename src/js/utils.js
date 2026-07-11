@@ -1,13 +1,3 @@
-const saveButtonToCancelButtonMap = {
-  addBookingSaveBtn: "addBookingCancelBtn",
-  editBookingSaveBtn: "editBookingCancelBtn",
-  addExpenseSaveBtn: "addExpenseCancelBtn",
-  editExpenseSaveBtn: "editExpenseCancelBtn",
-  addCustomerSaveBtn: "addCustomerCancelBtn",
-  editCustomerSaveBtn: "editCustomerCancelBtn",
-  addRentalSaveBtn: "addRentalCancelBtn",
-  editRentalSaveBtn: "editRentalCancelBtn",
-};
 
 export function todayStr() {
   const d = new Date();
@@ -83,25 +73,6 @@ export function updateDurationField(arrivalFieldId, departureFieldId, durationFi
   }
 }
 
-export function setBtnLoading(buttonId) {
-  const button = document.getElementById(buttonId);
-  button.disabled = true;
-  button.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving…`;
-  const cancelButtonId = saveButtonToCancelButtonMap[buttonId];
-  if (cancelButtonId) {
-    document.getElementById(cancelButtonId).disabled = true;
-  }
-}
-
-export function resetBtn(buttonId, label) {
-  const button = document.getElementById(buttonId);
-  button.disabled = false;
-  button.innerHTML = `<i class="bi bi-check-lg me-1"></i>${label}`;
-  const cancelButtonId = saveButtonToCancelButtonMap[buttonId];
-  if (cancelButtonId) {
-    document.getElementById(cancelButtonId).disabled = false;
-  }
-}
 
 export function showErrors(containerId, errors) {
   const container = document.getElementById(containerId);
@@ -169,9 +140,9 @@ export function formatRentalsLabel(rentals, totalRentalCount) {
 }
 
 export function initFixedStrategyDropdown(hostElement) {
-  const toggle = hostElement.querySelector('[data-bs-toggle="dropdown"]');
-  if (toggle && typeof bootstrap !== "undefined") {
-    bootstrap.Dropdown.getOrCreateInstance(toggle, {
+  const toggle = hostElement.querySelector('[data-coreui-toggle="dropdown"]');
+  if (toggle && typeof coreui !== "undefined") {
+    coreui.Dropdown.getOrCreateInstance(toggle, {
       popperConfig: (defaultConfig) => ({ ...defaultConfig, strategy: "fixed" }),
     });
   }

@@ -13,7 +13,7 @@ const TABS = [
 
 const navItem = (tab, { dismiss = false } = {}) => html`
   <a href="#" class="nav-link rounded px-3" data-tab="${tab.name}"
-    data-bs-dismiss=${dismiss ? "offcanvas" : nothing}
+    data-coreui-dismiss=${dismiss ? "offcanvas" : nothing}
     @click=${(e) => { e.preventDefault(); window.showTab(tab.name); }}>
     <i class="bi ${tab.icon} me-2"></i><span data-translations-key="sidebar.tab.${tab.name}">${tab.label}</span>
   </a>
@@ -43,7 +43,7 @@ class AppHeader extends LitElement {
       <div class="offcanvas offcanvas-start bg-success d-flex flex-column" tabindex="-1" id="mobileOffcanvas">
         <div class="offcanvas-header border-bottom border-white border-opacity-25">
           <h6 class="offcanvas-title fw-bold text-white"><img src="favicon.svg" width="20" height="20" alt="" style="vertical-align:-3px" class="me-1">Rental Manager</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+          <button type="button" class="btn-close btn-close-white" data-coreui-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body p-2 navbar-dark flex-grow-1">
           <nav class="navbar-nav flex-column gap-1">
@@ -60,7 +60,7 @@ class AppHeader extends LitElement {
         <div class="container-fluid">
           <span class="navbar-brand fw-bold"><img src="favicon.svg" width="20" height="20" alt="" style="vertical-align:-3px" class="me-1">Rental Manager</span>
           <button class="navbar-toggler border-0" type="button"
-            data-bs-toggle="offcanvas" data-bs-target="#mobileOffcanvas">
+            data-coreui-toggle="offcanvas" data-coreui-target="#mobileOffcanvas">
             <span class="navbar-toggler-icon"></span>
           </button>
         </div>

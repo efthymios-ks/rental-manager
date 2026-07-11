@@ -1,8 +1,8 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "../components/filterBar.js";
-import "../components/rentalFilterDropdown.js";
+import "../components/rentalsMultiSelect.js";
 import { state } from "../state.js";
-import { subscribeLanguage, t } from "../translations.js";
+import { subscribeLanguage, getLanguage, t } from "../translations.js";
 
 class ExportTab extends LitElement {
   static properties = {
@@ -12,6 +12,7 @@ class ExportTab extends LitElement {
   #fromDate = "";
   #toDate = "";
   #selectedRentalIds = [];
+  #dateRangePicker = null;
 
   constructor() {
     super();
@@ -24,12 +25,68 @@ class ExportTab extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+    this._unsubLang = subscribeLanguage(() => {
+      this.requestUpdate();
+      this.#dateRangePicker?.update({ locale: getLanguage() });
+    });
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this._unsubLang?.();
+    this.#dateRangePicker?.dispose();
+    this.#dateRangePicker = null;
+  }
+
+  firstUpdated() {
+    const el = this.querySelector("#exportDateRange");
+    if (!el) return;
+
+    const currentYear = new Date().getFullYear();
+    el.setAttribute("data-coreui-input-read-only", "true");
+    el.setAttribute("data-coreui-cleaner", "false");
+    el.setAttribute("data-coreui-selection-type", "month");
+    el.setAttribute("data-coreui-start-date", `${currentYear}-01`);
+    el.setAttribute("data-coreui-end-date", `${currentYear}-12`);
+
+    this.#dateRangePicker = new coreui.DateRangePicker(el, {
+      selectionType: "month",
+      placeholder: [t("export.field.from", "From"), t("export.field.to", "To")],
+      inputReadOnly: true,
+      locale: getLanguage(),
+      previewDateOnHover: false,
+      cleaner: false,
+      footer: true,
+      size: "sm",
+    });
+
+    el.addEventListener("startDateChange.coreui.date-range-picker", (e) => {
+      if (e.date) {
+        // selectionType:"month" fires e.date as "YYYY-MM" string
+        this.#fromDate = `${e.date}-01`;
+      } else {
+        this.#fromDate = "";
+      }
+      this.#applyFilters();
+    });
+
+    el.addEventListener("endDateChange.coreui.date-range-picker", (e) => {
+      if (e.date) {
+        const [year, month] = String(e.date).split("-").map(Number);
+        const lastDay = new Date(year, month, 0);
+        this.#toDate = this.#toDateStr(lastDay);
+      } else {
+        this.#toDate = "";
+      }
+      this.#applyFilters();
+    });
+  }
+
+  #toDateStr(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
 
   load() {
@@ -38,45 +95,32 @@ class ExportTab extends LitElement {
     this.#toDate = `${currentYear}-12-31`;
     this.#selectedRentalIds = [];
     state.exportBookings = state.allBookings;
+
+    const el = this.querySelector("#exportDateRange");
+    if (el) {
+      el.setAttribute("data-coreui-start-date", `${currentYear}-01`);
+      el.setAttribute("data-coreui-end-date", `${currentYear}-12`);
+    }
+    this.#dateRangePicker?.update({
+      startDate: `${currentYear}-01`,
+      endDate: `${currentYear}-12`,
+    });
+
     this.#applyFilters();
     this.updateComplete.then(() => {
-      this.querySelector("#exportFrom").value = this.#fromDate;
-      this.querySelector("#exportTo").value = this.#toDate;
-      this.querySelector("rental-filter-dropdown")?.setSelected(this.#selectedRentalIds);
+      this.querySelector("rental-filter-dropdown")?.setSelected([]);
     });
   }
 
   #applyFilters() {
     const selectedRentalIds = this.#selectedRentalIds;
     this._filteredBookings = state.exportBookings.filter((booking) => {
-      if (booking.OffRecord) {
-        return false;
-      }
-
-      if (selectedRentalIds !== null && !selectedRentalIds.includes(booking.RentalId)) {
-        return false;
-      }
-
-      if (this.#fromDate && booking.ArrivalDate < this.#fromDate) {
-        return false;
-      }
-
-      if (this.#toDate && booking.ArrivalDate > this.#toDate) {
-        return false;
-      }
-
+      if (booking.OffRecord) return false;
+      if (selectedRentalIds !== null && !selectedRentalIds.includes(booking.RentalId)) return false;
+      if (this.#fromDate && booking.ArrivalDate < this.#fromDate) return false;
+      if (this.#toDate && booking.ArrivalDate > this.#toDate) return false;
       return true;
     });
-  }
-
-  #onFromChange(event) {
-    this.#fromDate = event.target.value;
-    this.#applyFilters();
-  }
-
-  #onToChange(event) {
-    this.#toDate = event.target.value;
-    this.#applyFilters();
   }
 
   #onRentalChange(event) {
@@ -86,9 +130,7 @@ class ExportTab extends LitElement {
 
   async #downloadXlsx() {
     const bookings = this._filteredBookings;
-    if (!bookings.length) {
-      return;
-    }
+    if (!bookings.length) return;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(t("bookings.title", "Bookings"));
@@ -199,37 +241,19 @@ class ExportTab extends LitElement {
 
     return html`
       ${filterBar(html`
-        <div class="form-floating" style="width: 160px">
-          <input
-            type="date"
-            id="exportFrom"
-            class="form-control form-control-sm"
-            placeholder=${t("export.field.from", "From")}
-            @input=${this.#onFromChange}
-          />
-          <label>${t("export.field.from", "From")}</label>
-        </div>
-        <div class="form-floating" style="width: 160px">
-          <input
-            type="date"
-            id="exportTo"
-            class="form-control form-control-sm"
-            placeholder=${t("export.field.to", "To")}
-            @input=${this.#onToChange}
-          />
-          <label>${t("export.field.to", "To")}</label>
-        </div>
-        <rental-filter-dropdown
+        <div class="flex-shrink-0" style="width:320px"><div id="exportDateRange"></div></div>
+        <div class="flex-shrink-0"><rental-filter-dropdown
           .rentals=${state.allRentals}
-          @change=${this.#onRentalChange}
-        ></rental-filter-dropdown>
+          .defaultNone=${true}
+          @change=${(e) => this.#onRentalChange(e)}
+        ></rental-filter-dropdown></div>
       `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-download me-1"></i> ${t("export.title", "Export")}</span>
           <button
             class="btn btn-success btn-sm"
-            @click=${this.#downloadXlsx}
+            @click=${() => this.#downloadXlsx()}
             ?disabled=${!this._filteredBookings.length}
           >
             <i class="bi bi-download me-1"></i>${t("export.download", "Download .xlsx")}

@@ -14,21 +14,16 @@ export function showConfirm(title, message, confirmLabel, confirmClass, onConfir
   }
 
   actionButton.onclick = () => {
-    actionButton.disabled = true;
-    actionButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${confirmLabel}…`;
-    if (cancelButton) {
-      cancelButton.disabled = true;
-    }
+    const lb = coreui.LoadingButton.getInstance(actionButton) ?? new coreui.LoadingButton(actionButton, { disabledOnLoading: true });
+    lb.start();
+    if (cancelButton) cancelButton.disabled = true;
 
     onConfirm(() => {
-      bootstrap.Modal.getInstance(document.getElementById("confirmModal")).hide();
-      actionButton.disabled = false;
-      actionButton.textContent = confirmLabel;
-      if (cancelButton) {
-        cancelButton.disabled = false;
-      }
+      lb.stop();
+      coreui.Modal.getInstance(document.getElementById("confirmModal")).hide();
+      if (cancelButton) cancelButton.disabled = false;
     });
   };
 
-  new bootstrap.Modal(document.getElementById("confirmModal")).show();
+  new coreui.Modal(document.getElementById("confirmModal")).show();
 }

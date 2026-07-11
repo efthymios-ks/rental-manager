@@ -5,12 +5,16 @@ class RentalSelect extends LitElement {
   static properties = {
     rentals: { type: Array },
     selectedId: { type: String },
+    defaultNone: { type: Boolean },
+    invalid: { type: Boolean },
   };
 
   constructor() {
     super();
     this.rentals = [];
     this.selectedId = null;
+    this.defaultNone = false;
+    this.invalid = false;
   }
 
   createRenderRoot() {
@@ -34,7 +38,8 @@ class RentalSelect extends LitElement {
   render() {
     return html`
       <div class="form-floating mb-3">
-        <select class="form-select">
+        <select class=${`form-select${this.invalid ? " is-invalid" : ""}`}>
+          ${this.defaultNone ? html`<option value="" .selected=${!this.selectedId}></option>` : ""}
           ${this.rentals.map(
             (rental) => html`
               <option value="${rental.Id}" .selected=${rental.Id === this.selectedId}>

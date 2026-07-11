@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Rental Manager</title>
 		<link rel="icon" href="favicon.svg" type="image/svg+xml" />
-		<link rel="stylesheet" href="lib/bootstrap.min.css" />
+		<link rel="stylesheet" href="lib/coreui.min.css" />
 		<link rel="stylesheet" href="lib/bootstrap-icons.min.css" />
 		<link rel="stylesheet" href="css/styles.css" />
 		<script src="lib/google-gsi.js" async defer></script>
@@ -28,7 +28,7 @@
 		</div>
 
 		<!-- Loading Modal -->
-		<div class="modal fade" id="loadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+		<div class="modal fade" id="loadingModal" data-coreui-backdrop="static" data-coreui-keyboard="false" tabindex="-1">
 			<div class="modal-dialog modal-dialog-centered">
 				<div class="modal-content">
 					<div class="modal-body py-4">
@@ -79,7 +79,7 @@
 						<button
 							type="button"
 							class="btn-close"
-							data-bs-dismiss="modal"
+							data-coreui-dismiss="modal"
 						></button>
 					</div>
 					<div class="modal-body p-0" id="calendarDayModalBody"></div>
@@ -90,8 +90,8 @@
 		<!-- Confirm Modal -->
 		<div
 			class="modal fade"
-			data-bs-backdrop="static"
-			data-bs-keyboard="false"
+			data-coreui-backdrop="static"
+			data-coreui-keyboard="false"
 			id="confirmModal"
 			tabindex="-1"
 		>
@@ -102,19 +102,26 @@
 					</div>
 					<div class="modal-body" id="confirmModalBody"></div>
 					<div class="modal-footer">
-						<button class="btn btn-secondary btn-sm" data-bs-dismiss="modal"></button>
+						<button class="btn btn-secondary btn-sm" data-coreui-dismiss="modal"></button>
 						<button class="btn btn-sm" id="confirmModalActionBtn"></button>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<script src="lib/bootstrap.bundle.min.js"></script>
+		<script src="lib/coreui.bundle.min.js"></script>
 		<script src="lib/exceljs.min.js"></script>
 		<script src="config.js"></script>
 		<script src="config.local.js" onerror="void 0"></script>
-		<script src="js/auth.js"></script>
-		<script src="js/sheets.js"></script>
+		<script>
+			if (window.CONFIG?.environment === "local") {
+				document.write('<script src="js\/auth.local.js"><\/script>');
+				document.write('<script src="js\/sheets.local.js"><\/script>');
+			} else {
+				document.write('<script src="js\/auth.js"><\/script>');
+				document.write('<script src="js\/sheets.js"><\/script>');
+			}
+		</script>
 		<script src="js/api.js"></script>
 		<script type="module" src="js/app.js"></script>
 	</body>

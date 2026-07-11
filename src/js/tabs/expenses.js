@@ -1,9 +1,10 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "../components/filterBar.js";
+import "../components/datePickerInput.js";
 import "../components/noteAutocomplete.js";
 import "../components/rentalCheckboxes.js";
-import "../components/rentalFilterDropdown.js";
-import "../components/yearCheckboxDropdown.js";
+import "../components/rentalsMultiSelect.js";
+import "../components/yearMultiSelect.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
 import { subscribeLanguage, t } from "../translations.js";
@@ -73,9 +74,6 @@ class ExpensesTab extends LitElement {
   load() {
     this.#allExpenses = state.allExpenses;
     this._years = computeSharedYears();
-    if (state.sharedYears === null) {
-      state.sharedYears = defaultSharedYears();
-    }
     this.updateComplete.then(() => {
       this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
       this.querySelector("rental-filter-dropdown")?.setSelected(state.sharedRentalIds);
@@ -120,7 +118,7 @@ class ExpensesTab extends LitElement {
   #openAddModal() {
     this._addErrors = [];
     this._addSaving = false;
-    const modal = bootstrap.Modal.getOrCreateInstance(this.querySelector("#addExpenseModal"));
+    const modal = coreui.Modal.getOrCreateInstance(this.querySelector("#addExpenseModal"));
     modal.show();
     this.updateComplete.then(() => {
       this.querySelector("#addExpenseName").value = "";
@@ -136,7 +134,7 @@ class ExpensesTab extends LitElement {
   #openEditModal(expense) {
     this._editErrors = [];
     this._editSaving = false;
-    const modal = bootstrap.Modal.getOrCreateInstance(this.querySelector("#editExpenseModal"));
+    const modal = coreui.Modal.getOrCreateInstance(this.querySelector("#editExpenseModal"));
     modal.show();
     this.updateComplete.then(() => {
       this.querySelector("#editExpenseId").value = expense.Id;
@@ -163,7 +161,10 @@ class ExpensesTab extends LitElement {
     }
 
     this._addErrors = [];
+    const addBtn = this.querySelector("#addExpenseSaveBtn");
+    const addLb = coreui.LoadingButton.getInstance(addBtn) ?? new coreui.LoadingButton(addBtn, { disabledOnLoading: true });
     this._addSaving = true;
+    addLb.start();
     try {
       await window.api.addExpense({
         RentalIds: rentalIds.join(","),
@@ -172,11 +173,12 @@ class ExpensesTab extends LitElement {
         Notes: notes,
         DateCreated: date,
       });
-      bootstrap.Modal.getInstance(this.querySelector("#addExpenseModal")).hide();
+      coreui.Modal.getInstance(this.querySelector("#addExpenseModal")).hide();
       await this.#reload();
     } catch (error) {
       this._addErrors = [error.message];
     } finally {
+      addLb.stop();
       this._addSaving = false;
     }
   }
@@ -195,7 +197,10 @@ class ExpensesTab extends LitElement {
     }
 
     this._editErrors = [];
+    const editBtn = this.querySelector("#editExpenseSaveBtn");
+    const editLb = coreui.LoadingButton.getInstance(editBtn) ?? new coreui.LoadingButton(editBtn, { disabledOnLoading: true });
     this._editSaving = true;
+    editLb.start();
     try {
       await window.api.updateExpense(expenseId, {
         RentalIds: rentalIds.join(","),
@@ -204,11 +209,12 @@ class ExpensesTab extends LitElement {
         Notes: notes,
         DateCreated: date,
       });
-      bootstrap.Modal.getInstance(this.querySelector("#editExpenseModal")).hide();
+      coreui.Modal.getInstance(this.querySelector("#editExpenseModal")).hide();
       await this.#reload();
     } catch (error) {
       this._editErrors = [error.message];
     } finally {
+      editLb.stop();
       this._editSaving = false;
     }
   }
@@ -247,21 +253,21 @@ class ExpensesTab extends LitElement {
 
   #renderAddModal() {
     return html`
-      <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="addExpenseModal" tabindex="-1">
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="addExpenseModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>${t("expenses.modal.add.title", "Add Expense")}</h5>
             </div>
             <div class="modal-body">
-              <note-autocomplete
+              <input-autocomplete
                 id="addExpenseName"
                 class="mb-3"
                 label=${t("expenses.field.name", "Name")}
                 placeholder=${t("expenses.field.name", "Name")}
                 icon="bi-tag"
                 .suggestions=${uniqueByField(state.allExpenses, "Name")}
-              ></note-autocomplete>
+              ></input-autocomplete>
               <div class="mb-3">
                 <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
                 <rental-checkboxes id="addExpenseRentalCheckboxes"></rental-checkboxes>
@@ -270,25 +276,23 @@ class ExpensesTab extends LitElement {
                 <input type="number" id="addExpenseAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
                 <label><i class="bi bi-currency-euro me-1"></i>${t("expenses.field.amount", "Amount (€)")}</label>
               </div>
-              <div class="form-floating mb-3">
-                <input type="date" id="addExpenseDate" class="form-control" placeholder=${t("expenses.field.date", "Date")} />
-                <label><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold"><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
+                <date-picker-input id="addExpenseDate"></date-picker-input>
               </div>
-              <note-autocomplete
+              <input-autocomplete
                 id="addExpenseNotes"
                 class="mb-3"
                 label=${t("expenses.field.notes", "Notes")}
                 placeholder=${t("expenses.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allExpenses)}
-              ></note-autocomplete>
+              ></input-autocomplete>
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" @click=${this.#submitAdd} ?disabled=${this._addSaving}>
-                ${this._addSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
-                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
+              <button class="btn btn-secondary" data-coreui-dismiss="modal" ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
+              <button class="btn btn-success" id="addExpenseSaveBtn" @click=${this.#submitAdd}>
+                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
               </button>
             </div>
           </div>
@@ -299,7 +303,7 @@ class ExpensesTab extends LitElement {
 
   #renderEditModal() {
     return html`
-      <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="editExpenseModal" tabindex="-1">
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="editExpenseModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -307,14 +311,14 @@ class ExpensesTab extends LitElement {
             </div>
             <div class="modal-body">
               <input type="hidden" id="editExpenseId" />
-              <note-autocomplete
+              <input-autocomplete
                 id="editExpenseName"
                 class="mb-3"
                 label=${t("expenses.field.name", "Name")}
                 placeholder=${t("expenses.field.name", "Name")}
                 icon="bi-tag"
                 .suggestions=${uniqueByField(state.allExpenses, "Name")}
-              ></note-autocomplete>
+              ></input-autocomplete>
               <div class="mb-3">
                 <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
                 <rental-checkboxes id="editExpenseRentalCheckboxes"></rental-checkboxes>
@@ -323,25 +327,23 @@ class ExpensesTab extends LitElement {
                 <input type="number" id="editExpenseAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
                 <label><i class="bi bi-currency-euro me-1"></i>${t("expenses.field.amount", "Amount (€)")}</label>
               </div>
-              <div class="form-floating mb-3">
-                <input type="date" id="editExpenseDate" class="form-control" placeholder=${t("expenses.field.date", "Date")} />
-                <label><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold"><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
+                <date-picker-input id="editExpenseDate"></date-picker-input>
               </div>
-              <note-autocomplete
+              <input-autocomplete
                 id="editExpenseNotes"
                 class="mb-3"
                 label=${t("expenses.field.notes", "Notes")}
                 placeholder=${t("expenses.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allExpenses)}
-              ></note-autocomplete>
+              ></input-autocomplete>
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" @click=${this.#submitEdit} ?disabled=${this._editSaving}>
-                ${this._editSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
-                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
+              <button class="btn btn-secondary" data-coreui-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
+              <button class="btn btn-success" id="editExpenseSaveBtn" @click=${this.#submitEdit}>
+                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
               </button>
             </div>
           </div>
@@ -405,14 +407,14 @@ class ExpensesTab extends LitElement {
 
     return html`
       ${filterBar(html`
-        <year-checkbox-dropdown
+        <div class="flex-shrink-0"><year-checkbox-dropdown
           .years=${this._years}
           @change=${this.#onYearChange}
-        ></year-checkbox-dropdown>
-        <rental-filter-dropdown
+        ></year-checkbox-dropdown></div>
+        <div class="flex-shrink-0"><rental-filter-dropdown
           .rentals=${state.allRentals}
           @change=${this.#onRentalChange}
-        ></rental-filter-dropdown>
+        ></rental-filter-dropdown></div>
       `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">

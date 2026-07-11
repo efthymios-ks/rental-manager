@@ -6,65 +6,33 @@ app-header {
 
 /* Selected nav item */
 [data-tab][data-selected] {
-  background: rgba(var(--bs-black-rgb), 0.2);
+  background: rgba(var(--cui-black-rgb), 0.2);
   font-weight: 600;
 }
 
-/* Mobile navbar (fixed 56px) offset for tab-level sticky headers */
-@media (max-width: 767.98px) {
-  .tab-filter-sticky {
-    top: 56px;
-  }
+/* Ensure CoreUI dropdowns/multi-selects float above sticky filter bar (z-index 1020) */
+.form-multi-select-dropdown {
+  z-index: 1030 !important;
+}
+
+.autocomplete {
+  --cui-autocomplete-zindex: 1030;
+}
+
+.date-picker {
+  --cui-date-picker-zindex: 1030;
 }
 
 /* Custom elements that need block layout so width utilities work */
-note-autocomplete,
-language-picker {
+input-autocomplete,
+language-picker,
+year-checkbox-dropdown,
+rental-filter-dropdown {
   display: block;
 }
 
-.note-ac-open {
-  border-bottom-left-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-}
 
-.note-ac-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 1060;
-  background: #fff;
-  border: 1px solid #86b7fe;
-  border-top: 0;
-  border-radius: 0 0 .375rem .375rem;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, .12);
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.note-ac-item {
-  padding: .6rem .75rem;
-  cursor: pointer;
-  font-size: .9rem;
-  border-bottom: 1px solid #f0f0f0;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.note-ac-item:last-child {
-  border-bottom: 0;
-}
-
-.note-ac-item:hover,
-.note-ac-item:active {
-  background: #e8f0fe;
-}
-
-/* Reusable table with sticky header (always) and optional sticky footer.
-   Compose with Bootstrap: <div class="table-responsive rm-table-scroll">
-                             <table class="table table-striped rm-table rm-sticky-footer">
-   Header color via any Bootstrap .table-* variant on <thead>. */
+/* Reusable table with sticky header (always) and optional sticky footer */
 .rm-table-scroll {
   overflow: auto;
   max-height: 70vh;
@@ -82,12 +50,12 @@ language-picker {
   z-index: 2;
 }
 
-.rm-table.rm-sticky-footer tfoot > tr > * {
+.rm-table.rm-sticky-footer tfoot>tr>* {
   position: sticky;
   bottom: 0;
   z-index: 2;
-  background: var(--bs-tertiary-bg);
-  border-top: 1px solid var(--bs-border-color);
+  background: var(--cui-tertiary-bg);
+  border-top: 1px solid var(--cui-border-color);
 }
 
 /* Card styling */
@@ -98,98 +66,8 @@ language-picker {
 }
 
 .card-header {
-  background: var(--bs-white);
-  border-bottom: 1px solid var(--bs-border-color);
+  background: var(--cui-white);
+  border-bottom: 1px solid var(--cui-border-color);
   border-radius: 10px 10px 0 0 !important;
   font-weight: 600;
-}
-
-/* Copy phone button */
-.copy-phone-btn {
-  padding: 0.15rem 0.4rem;
-  font-size: 0.75rem;
-  line-height: 1;
-}
-
-/* Calendar Gantt */
-.cal-gantt {
-  overflow-x: auto;
-}
-
-.cal-gantt-row {
-  display: flex;
-  align-items: stretch;
-  min-width: max-content;
-}
-
-.cal-gantt-label {
-  width: 110px;
-  min-width: 110px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.3rem 0.5rem;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid var(--bs-border-color);
-  background: var(--bs-white);
-  position: sticky;
-  left: 0;
-  z-index: 1;
-}
-
-.cal-gantt-cells {
-  display: flex;
-}
-
-.cal-gantt-hcell,
-.cal-gantt-cell {
-  width: 28px;
-  min-width: 28px;
-  height: 32px;
-  border-right: 1px solid var(--bs-border-color);
-  border-bottom: 1px solid var(--bs-border-color);
-  box-sizing: border-box;
-}
-
-.cal-gantt-hcell {
-  height: 38px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 4px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--bs-secondary-color);
-  position: relative;
-}
-
-.cal-gantt-month-label {
-  font-size: 0.58rem;
-  color: var(--bs-secondary-color);
-  position: absolute;
-  top: 2px;
-  left: 0;
-  right: 0;
-  text-align: center;
-}
-
-.cal-gantt-occupied {
-  cursor: pointer;
-  opacity: 0.85;
-}
-
-.cal-gantt-occupied:hover {
-  opacity: 1;
-}
-
-.cal-gantt-today {
-  background: var(--bs-warning-bg-subtle) !important;
-}
-
-.cal-gantt-sep {
-  border-left: 2px solid var(--bs-secondary-color) !important;
 }

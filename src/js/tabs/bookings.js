@@ -1,10 +1,11 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import "../components/customerSelect.js";
+import "../components/datePickerInput.js";
 import { filterBar } from "../components/filterBar.js";
 import "../components/noteAutocomplete.js";
-import "../components/rentalFilterDropdown.js";
+import "../components/rentalsMultiSelect.js";
 import "../components/rentalSelect.js";
-import "../components/yearCheckboxDropdown.js";
+import "../components/yearMultiSelect.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
 import { subscribeLanguage, t } from "../translations.js";
@@ -59,9 +60,6 @@ class BookingsTab extends LitElement {
   load() {
     this.#allBookings = state.allBookings;
     this._years = computeSharedYears();
-    if (state.sharedYears === null) {
-      state.sharedYears = defaultSharedYears();
-    }
     this.#searchQuery = "";
     this.#offRecordOnly = false;
     this.updateComplete.then(() => {
@@ -152,7 +150,7 @@ class BookingsTab extends LitElement {
     );
     this.querySelector("#addBookingOffRecord").checked = false;
     this._addErrors = [];
-    bootstrap.Modal.getOrCreateInstance(this.querySelector("#addBookingModal")).show();
+    coreui.Modal.getOrCreateInstance(this.querySelector("#addBookingModal")).show();
   }
 
   #openEditModal(booking) {
@@ -171,7 +169,7 @@ class BookingsTab extends LitElement {
     customerEl.customers = state.allCustomers;
     customerEl.selectedId = booking.CustomerId;
     this._editErrors = [];
-    bootstrap.Modal.getOrCreateInstance(this.querySelector("#editBookingModal")).show();
+    coreui.Modal.getOrCreateInstance(this.querySelector("#editBookingModal")).show();
   }
 
   #validateBooking(rentalId, customerId, arrival, departure, amount) {
@@ -218,7 +216,10 @@ class BookingsTab extends LitElement {
     }
 
     this._addErrors = [];
+    const addBtn = this.querySelector("#addBookingSaveBtn");
+    const addLb = coreui.LoadingButton.getInstance(addBtn) ?? new coreui.LoadingButton(addBtn, { disabledOnLoading: true });
     this._addSaving = true;
+    addLb.start();
     try {
       await window.api.addBooking({
         RentalId: rentalId,
@@ -229,10 +230,12 @@ class BookingsTab extends LitElement {
         Notes: notes,
         OffRecord: offRecord,
       });
+      addLb.stop();
       this._addSaving = false;
-      bootstrap.Modal.getInstance(this.querySelector("#addBookingModal")).hide();
+      coreui.Modal.getInstance(this.querySelector("#addBookingModal")).hide();
       await this.#reload();
     } catch (error) {
+      addLb.stop();
       this._addSaving = false;
       this._addErrors = [error.message];
     }
@@ -254,7 +257,10 @@ class BookingsTab extends LitElement {
     }
 
     this._editErrors = [];
+    const editBtn = this.querySelector("#editBookingSaveBtn");
+    const editLb = coreui.LoadingButton.getInstance(editBtn) ?? new coreui.LoadingButton(editBtn, { disabledOnLoading: true });
     this._editSaving = true;
+    editLb.start();
     try {
       await window.api.updateBooking(bookingId, {
         RentalId: rentalId,
@@ -265,10 +271,12 @@ class BookingsTab extends LitElement {
         Notes: notes,
         OffRecord: offRecord,
       });
+      editLb.stop();
       this._editSaving = false;
-      bootstrap.Modal.getInstance(this.querySelector("#editBookingModal")).hide();
+      coreui.Modal.getInstance(this.querySelector("#editBookingModal")).hide();
       await this.#reload();
     } catch (error) {
+      editLb.stop();
       this._editSaving = false;
       this._editErrors = [error.message];
     }
@@ -382,29 +390,33 @@ class BookingsTab extends LitElement {
 
   #renderAddModal() {
     return html`
-      <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="addBookingModal" tabindex="-1">
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="addBookingModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>${t("bookings.modal.add.title", "Add Booking")}</h5>
             </div>
             <div class="modal-body">
-              <rental-select id="addBookingRental"></rental-select>
-              <customer-select id="addBookingCustomer"></customer-select>
+              <rental-select id="addBookingRental"
+                .defaultNone=${true}
+                .invalid=${this._addErrors.some(e => e.includes(t("bookings.error.rentalRequired", "Please select a rental.")))}
+              ></rental-select>
+              <customer-select id="addBookingCustomer"
+                .defaultNone=${true}
+                .invalid=${this._addErrors.some(e => e.includes(t("bookings.error.customerRequired", "Please select a customer.")))}
+              ></customer-select>
               <div class="row mb-3">
                 <div class="col">
-                  <div class="form-floating">
-                    <input type="date" id="addBookingArrival" class="form-control" placeholder=${t("bookings.field.arrival", "Arrival")}
-                      @input=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
-                  </div>
+                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
+                  <date-picker-input id="addBookingArrival"
+                    @change=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")}>
+                  </date-picker-input>
                 </div>
                 <div class="col">
-                  <div class="form-floating">
-                    <input type="date" id="addBookingDeparture" class="form-control" placeholder=${t("bookings.field.departure", "Departure")}
-                      @input=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
-                  </div>
+                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
+                  <date-picker-input id="addBookingDeparture"
+                    @change=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")}>
+                  </date-picker-input>
                 </div>
               </div>
               <div class="form-floating mb-3">
@@ -415,13 +427,13 @@ class BookingsTab extends LitElement {
                 <input type="number" id="addBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
                 <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
               </div>
-              <note-autocomplete
+              <input-autocomplete
                 id="addBookingNotes"
                 class="mb-3"
                 label=${t("bookings.field.notes", "Notes")}
                 placeholder=${t("bookings.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allBookings)}
-              ></note-autocomplete>
+              ></input-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="addBookingOffRecord" />
                 <label class="form-check-label" for="addBookingOffRecord">
@@ -431,13 +443,10 @@ class BookingsTab extends LitElement {
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" id="addBookingCancelBtn" data-bs-dismiss="modal"
+              <button class="btn btn-secondary" id="addBookingCancelBtn" data-coreui-dismiss="modal"
                 ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" id="addBookingSaveBtn" @click=${this.#submitAdd}
-                ?disabled=${this._addSaving}>
-                ${this._addSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
-                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
+              <button class="btn btn-success" id="addBookingSaveBtn" @click=${this.#submitAdd}>
+                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
               </button>
             </div>
           </div>
@@ -448,7 +457,7 @@ class BookingsTab extends LitElement {
 
   #renderEditModal() {
     return html`
-      <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="editBookingModal" tabindex="-1">
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="editBookingModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -460,18 +469,16 @@ class BookingsTab extends LitElement {
               <customer-select id="editBookingCustomer"></customer-select>
               <div class="row mb-3">
                 <div class="col">
-                  <div class="form-floating">
-                    <input type="date" id="editBookingArrival" class="form-control" placeholder=${t("bookings.field.arrival", "Arrival")}
-                      @input=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
-                  </div>
+                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
+                  <date-picker-input id="editBookingArrival"
+                    @change=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")}>
+                  </date-picker-input>
                 </div>
                 <div class="col">
-                  <div class="form-floating">
-                    <input type="date" id="editBookingDeparture" class="form-control" placeholder=${t("bookings.field.departure", "Departure")}
-                      @input=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")} />
-                    <label><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
-                  </div>
+                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
+                  <date-picker-input id="editBookingDeparture"
+                    @change=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")}>
+                  </date-picker-input>
                 </div>
               </div>
               <div class="form-floating mb-3">
@@ -482,13 +489,13 @@ class BookingsTab extends LitElement {
                 <input type="number" id="editBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
                 <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
               </div>
-              <note-autocomplete
+              <input-autocomplete
                 id="editBookingNotes"
                 class="mb-3"
                 label=${t("bookings.field.notes", "Notes")}
                 placeholder=${t("bookings.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allBookings)}
-              ></note-autocomplete>
+              ></input-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="editBookingOffRecord" />
                 <label class="form-check-label" for="editBookingOffRecord">
@@ -498,13 +505,10 @@ class BookingsTab extends LitElement {
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" id="editBookingCancelBtn" data-bs-dismiss="modal"
+              <button class="btn btn-secondary" id="editBookingCancelBtn" data-coreui-dismiss="modal"
                 ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" id="editBookingSaveBtn" @click=${this.#submitEdit}
-                ?disabled=${this._editSaving}>
-                ${this._editSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
-                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
+              <button class="btn btn-success" id="editBookingSaveBtn" @click=${this.#submitEdit}>
+                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
               </button>
             </div>
           </div>
@@ -516,15 +520,15 @@ class BookingsTab extends LitElement {
   render() {
     return html`
       ${filterBar(html`
-        <year-checkbox-dropdown
+        <div class="flex-shrink-0"><year-checkbox-dropdown
           .years=${this._years}
           @change=${this.#onYearChange}
-        ></year-checkbox-dropdown>
-        <rental-filter-dropdown
+        ></year-checkbox-dropdown></div>
+        <div class="flex-shrink-0"><rental-filter-dropdown
           .rentals=${state.allRentals}
           @change=${this.#onRentalChange}
-        ></rental-filter-dropdown>
-        <note-autocomplete
+        ></rental-filter-dropdown></div>
+        <input-autocomplete
           id="bookingSearchInput"
           class="flex-shrink-0"
           style="width: 240px"
@@ -532,7 +536,7 @@ class BookingsTab extends LitElement {
           placeholder=${t("bookings.filter.search.placeholder", "Search customer...")}
           .suggestions=${uniqueByField(state.allCustomers, "FullName")}
           @input=${this.#onSearchInput}
-        ></note-autocomplete>
+        ></input-autocomplete>
         <div class="form-check form-switch mb-0">
           <input
             class="form-check-input"

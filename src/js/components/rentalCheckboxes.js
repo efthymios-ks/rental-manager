@@ -58,8 +58,8 @@ class RentalCheckboxes extends LitElement {
         <button
           class="btn btn-outline-secondary w-100 text-start dropdown-toggle"
           type="button"
-          data-bs-toggle="dropdown"
-          data-bs-auto-close="outside"
+          data-coreui-toggle="dropdown"
+          data-coreui-auto-close="outside"
         >
           ${this.#label}
         </button>

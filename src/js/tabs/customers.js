@@ -1,12 +1,12 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "../components/filterBar.js";
 import "../components/noteAutocomplete.js";
-import "../components/rentalFilterDropdown.js";
-import "../components/yearCheckboxDropdown.js";
+import "../components/rentalsMultiSelect.js";
+import "../components/yearMultiSelect.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
 import { subscribeLanguage, t } from "../translations.js";
-import { computeSharedYears, defaultSharedYears, normalizeSearch, uniqueNotes } from "../utils.js";
+import { computeSharedYears, normalizeSearch, uniqueNotes } from "../utils.js";
 
 function normalizePhone(raw) {
   return raw.replace(/\s/g, "");
@@ -30,6 +30,8 @@ class CustomersTab extends LitElement {
   #searchQuery = "";
   #vatIgnoredOnly = false;
   #years = [];
+  #filterYears = null;
+  #filterRentalIds = null;
 
   constructor() {
     super();
@@ -60,18 +62,13 @@ class CustomersTab extends LitElement {
     this.#searchQuery = "";
     this.#vatIgnoredOnly = false;
     this.#years = computeSharedYears();
-    if (state.sharedYears === null) {
-      state.sharedYears = defaultSharedYears();
-    }
     this.updateComplete.then(() => {
       const searchInput = this.querySelector("#customerSearchInput");
       if (searchInput) searchInput.value = "";
       const vatInput = this.querySelector("#customerVatIgnoredFilter");
       if (vatInput) vatInput.checked = false;
-      this.querySelector("year-checkbox-dropdown")?.setSelected(state.sharedYears);
-      this.querySelector("rental-filter-dropdown")?.setSelected(
-        state.sharedRentalIds ?? state.allRentals.map((r) => r.Id),
-      );
+      this.querySelector("year-checkbox-dropdown")?.setSelected(this.#filterYears ?? []);
+      this.querySelector("rental-filter-dropdown")?.setSelected(this.#filterRentalIds ?? []);
     });
     this.#applyFilters();
   }
@@ -82,8 +79,8 @@ class CustomersTab extends LitElement {
   }
 
   #applyFilters() {
-    const selectedYears = state.sharedYears;
-    const selectedRentalIds = state.sharedRentalIds;
+    const selectedYears = this.#filterYears?.length ? this.#filterYears : null;
+    const selectedRentalIds = this.#filterRentalIds?.length ? this.#filterRentalIds : null;
     this._filteredCustomers = state.allCustomers.filter((customer) => {
       if (this.#vatIgnoredOnly && customer.VatOrPassport) {
         return false;
@@ -93,7 +90,7 @@ class CustomersTab extends LitElement {
         const customerBookings = state.allBookings.filter(
           (booking) => booking.CustomerId === customer.Id,
         );
-        if (!customerBookings.length) return false;
+        if (!customerBookings.length) return true;
 
         if (
           selectedYears !== null &&
@@ -135,12 +132,12 @@ class CustomersTab extends LitElement {
   }
 
   #onYearChange(event) {
-    state.sharedYears = event.target.selectedYears;
+    this.#filterYears = event.target.selectedYears;
     this.#applyFilters();
   }
 
   #onRentalChange(event) {
-    state.sharedRentalIds = event.target.selectedIds;
+    this.#filterRentalIds = event.target.selectedIds;
     this.#applyFilters();
   }
 
@@ -158,7 +155,7 @@ class CustomersTab extends LitElement {
   #openAddModal() {
     this._addErrors = [];
     this._addSaving = false;
-    const modal = bootstrap.Modal.getOrCreateInstance(this.querySelector("#addCustomerModal"));
+    const modal = coreui.Modal.getOrCreateInstance(this.querySelector("#addCustomerModal"));
     modal.show();
     this.updateComplete.then(() => {
       this.querySelector("#addCustomerFullName").value = "";
@@ -173,7 +170,7 @@ class CustomersTab extends LitElement {
   #openEditModal(customer) {
     this._editErrors = [];
     this._editSaving = false;
-    const modal = bootstrap.Modal.getOrCreateInstance(this.querySelector("#editCustomerModal"));
+    const modal = coreui.Modal.getOrCreateInstance(this.querySelector("#editCustomerModal"));
     modal.show();
     this.updateComplete.then(() => {
       this.querySelector("#editCustomerId").value = customer.Id;
@@ -200,7 +197,10 @@ class CustomersTab extends LitElement {
     }
 
     this._addErrors = [];
+    const addBtn = this.querySelector("#addCustomerSaveBtn");
+    const addLb = coreui.LoadingButton.getInstance(addBtn) ?? new coreui.LoadingButton(addBtn, { disabledOnLoading: true });
     this._addSaving = true;
+    addLb.start();
     try {
       await window.api.addCustomer({
         FullName: fullName,
@@ -210,11 +210,12 @@ class CustomersTab extends LitElement {
         PhoneNumber: phoneNumber,
         IgnoreMissingVat: ignoreMissingVat,
       });
-      bootstrap.Modal.getInstance(this.querySelector("#addCustomerModal")).hide();
+      coreui.Modal.getInstance(this.querySelector("#addCustomerModal")).hide();
       await this.#reload();
     } catch (error) {
       this._addErrors = [error.message];
     } finally {
+      addLb.stop();
       this._addSaving = false;
     }
   }
@@ -234,7 +235,10 @@ class CustomersTab extends LitElement {
     }
 
     this._editErrors = [];
+    const editBtn = this.querySelector("#editCustomerSaveBtn");
+    const editLb = coreui.LoadingButton.getInstance(editBtn) ?? new coreui.LoadingButton(editBtn, { disabledOnLoading: true });
     this._editSaving = true;
+    editLb.start();
     try {
       await window.api.updateCustomer(customerId, {
         FullName: fullName,
@@ -244,11 +248,12 @@ class CustomersTab extends LitElement {
         PhoneNumber: phoneNumber,
         IgnoreMissingVat: ignoreMissingVat,
       });
-      bootstrap.Modal.getInstance(this.querySelector("#editCustomerModal")).hide();
+      coreui.Modal.getInstance(this.querySelector("#editCustomerModal")).hide();
       await this.#reload();
     } catch (error) {
       this._editErrors = [error.message];
     } finally {
+      editLb.stop();
       this._editSaving = false;
     }
   }
@@ -307,7 +312,7 @@ class CustomersTab extends LitElement {
 
   #renderAddModal() {
     return html`
-      <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="addCustomerModal" tabindex="-1">
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="addCustomerModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -333,13 +338,13 @@ class CustomersTab extends LitElement {
                 </button>
               </div>
               ${this.#renderRatingButtons(this._addRating, (v) => this._addRating = v)}
-              <note-autocomplete
+              <input-autocomplete
                 id="addCustomerNotes"
                 class="mb-3"
                 label=${t("customers.field.notes", "Notes")}
                 placeholder=${t("customers.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allCustomers)}
-              ></note-autocomplete>
+              ></input-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="addCustomerIgnoreMissingVat" />
                 <label class="form-check-label" for="addCustomerIgnoreMissingVat">
@@ -349,11 +354,9 @@ class CustomersTab extends LitElement {
               ${this.#renderErrors(this._addErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" @click=${this.#submitAdd} ?disabled=${this._addSaving}>
-                ${this._addSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
-                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
+              <button class="btn btn-secondary" data-coreui-dismiss="modal" ?disabled=${this._addSaving}>${t("common.cancel", "Cancel")}</button>
+              <button class="btn btn-success" id="addCustomerSaveBtn" @click=${this.#submitAdd}>
+                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
               </button>
             </div>
           </div>
@@ -364,7 +367,7 @@ class CustomersTab extends LitElement {
 
   #renderEditModal() {
     return html`
-      <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="editCustomerModal" tabindex="-1">
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="editCustomerModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -391,13 +394,13 @@ class CustomersTab extends LitElement {
                 </button>
               </div>
               ${this.#renderRatingButtons(this._editRating, (v) => this._editRating = v)}
-              <note-autocomplete
+              <input-autocomplete
                 id="editCustomerNotes"
                 class="mb-3"
                 label=${t("customers.field.notes", "Notes")}
                 placeholder=${t("customers.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allCustomers)}
-              ></note-autocomplete>
+              ></input-autocomplete>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" role="switch" id="editCustomerIgnoreMissingVat" />
                 <label class="form-check-label" for="editCustomerIgnoreMissingVat">
@@ -407,11 +410,9 @@ class CustomersTab extends LitElement {
               ${this.#renderErrors(this._editErrors)}
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" @click=${this.#submitEdit} ?disabled=${this._editSaving}>
-                ${this._editSaving
-                  ? html`<span class="spinner-border spinner-border-sm me-1"></span>${t("common.saving", "Saving…")}`
-                  : html`<i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}`}
+              <button class="btn btn-secondary" data-coreui-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
+              <button class="btn btn-success" id="editCustomerSaveBtn" @click=${this.#submitEdit}>
+                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
               </button>
             </div>
           </div>
@@ -485,15 +486,18 @@ class CustomersTab extends LitElement {
 
     return html`
       ${filterBar(html`
-        <year-checkbox-dropdown
+        <div class="flex-shrink-0"><year-checkbox-dropdown
           .years=${this.#years}
-          .defaultAll=${true}
+          .defaultNone=${true}
+          .cleaner=${true}
           @change=${this.#onYearChange}
-        ></year-checkbox-dropdown>
-        <rental-filter-dropdown
+        ></year-checkbox-dropdown></div>
+        <div class="flex-shrink-0"><rental-filter-dropdown
           .rentals=${state.allRentals}
+          .defaultNone=${true}
+          .cleaner=${true}
           @change=${this.#onRentalChange}
-        ></rental-filter-dropdown>
+        ></rental-filter-dropdown></div>
         <input
           type="text"
           id="customerSearchInput"

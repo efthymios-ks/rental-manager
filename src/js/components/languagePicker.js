@@ -55,7 +55,7 @@ class LanguagePicker extends LitElement {
         <button
           class="btn btn-outline-light btn-sm dropdown-toggle w-100 d-flex align-items-center justify-content-between"
           type="button"
-          data-bs-toggle="dropdown"
+          data-coreui-toggle="dropdown"
         >
           <span><i class="bi bi-globe me-1"></i>${currentLabel}</span>
         </button>

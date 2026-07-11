@@ -1,7 +1,7 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "../components/filterBar.js";
-import "../components/rentalFilterDropdown.js";
-import "../components/yearCheckboxDropdown.js";
+import "../components/rentalsMultiSelect.js";
+import "../components/yearMultiSelect.js";
 import { state } from "../state.js";
 import { subscribeLanguage, t } from "../translations.js";
 import { computeSharedYears, defaultSharedYears } from "../utils.js";
@@ -12,6 +12,8 @@ class DashboardTab extends LitElement {
     _selectedYears: { state: true },
     _summaries: { state: true },
     _missingVatCustomers: { state: true },
+    _editingCustomer: { state: true },
+    _editingSaving: { state: true },
   };
 
   constructor() {
@@ -20,6 +22,8 @@ class DashboardTab extends LitElement {
     this._selectedYears = null;
     this._summaries = [];
     this._missingVatCustomers = [];
+    this._editingCustomer = null;
+    this._editingSaving = false;
   }
 
   createRenderRoot() {
@@ -40,9 +44,6 @@ class DashboardTab extends LitElement {
     const yearSummaries = window.api.computeDashboardSummaries();
     state.allDashboardSummaries = yearSummaries;
 
-    if (state.sharedYears === null) {
-      state.sharedYears = defaultSharedYears();
-    }
 
     this._summaries = yearSummaries;
     this._years = computeSharedYears();
@@ -75,15 +76,75 @@ class DashboardTab extends LitElement {
     this.requestUpdate();
   }
 
-  #copyPhone(phone) {
-    navigator.clipboard.writeText(phone).catch(() => {
-      const textArea = document.createElement("textarea");
-      textArea.value = phone;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
+  #openVatModal(customer) {
+    this._editingCustomer = customer;
+    this._editingSaving = false;
+    const modal = coreui.Modal.getOrCreateInstance(this.querySelector("#addVatModal"));
+    modal.show();
+    this.updateComplete.then(() => {
+      const input = this.querySelector("#vatInput");
+      if (input) { input.value = ""; input.focus(); }
     });
+  }
+
+  async #saveVat() {
+    const customer = this._editingCustomer;
+    const value = this.querySelector("#vatInput")?.value?.trim();
+    if (!value) return;
+    const btn = this.querySelector("#addVatSaveBtn");
+    const lb = coreui.LoadingButton.getInstance(btn) ?? new coreui.LoadingButton(btn, { disabledOnLoading: true });
+    this._editingSaving = true;
+    lb.start();
+    try {
+      await window.api.updateCustomer(customer.Id, {
+        FullName: customer.FullName,
+        VatOrPassport: value,
+        PhoneNumber: customer.PhoneNumber || "",
+        Rating: customer.Rating || 0,
+        Notes: customer.Notes || "",
+        IgnoreMissingVat: customer.IgnoreMissingVat || false,
+      });
+      coreui.Modal.getInstance(this.querySelector("#addVatModal"))?.hide();
+      await window.api.loadAll();
+      window.refreshCurrentTab();
+    } catch (e) {
+      alert(`Error: ${e.message}`);
+    } finally {
+      lb.stop();
+      this._editingSaving = false;
+    }
+  }
+
+  #renderVatModal() {
+    const customer = this._editingCustomer;
+    return html`
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="addVatModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-card-text me-2"></i>${t("dashboard.missingVat.modal.title", "Add VAT / Passport")}</h5>
+            </div>
+            <div class="modal-body">
+              ${customer ? html`<p class="mb-2 fw-semibold">${customer.FullName}</p>` : ""}
+              <input
+                type="text"
+                id="vatInput"
+                class="form-control"
+                placeholder=${t("dashboard.missingVat.placeholder", "VAT / Passport number")}
+                ?disabled=${this._editingSaving}
+                @keydown=${(e) => { if (e.key === "Enter") this.#saveVat(); }}
+              />
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-coreui-dismiss="modal" ?disabled=${this._editingSaving}>${t("common.cancel", "Cancel")}</button>
+              <button class="btn btn-success" id="addVatSaveBtn" @click=${() => this.#saveVat()}>
+                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   #renderMissingVat() {
@@ -98,34 +159,26 @@ class DashboardTab extends LitElement {
           (${this._missingVatCustomers.length})
         </div>
         <ul class="list-group list-group-flush">
-          ${this._missingVatCustomers.map(
-            (customer) => html`
-              <li
-                class="list-group-item d-flex justify-content-between align-items-start py-2"
-              >
-                <span class="d-flex flex-column">
-                  <span class="fw-semibold">${customer.FullName}</span>
-                  ${customer.rentalNames.length
-                    ? html`<span class="small text-muted fst-italic">${customer.rentalNames.join(", ")}</span>`
-                    : ""}
-                </span>
+          ${this._missingVatCustomers.map((customer) => html`
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+              <span class="d-flex flex-column">
+                <span class="fw-semibold">${customer.FullName}</span>
+                ${customer.rentalNames.length
+                  ? html`<span class="small text-muted fst-italic">${customer.rentalNames.join(", ")}</span>`
+                  : ""}
+              </span>
+              <span class="d-flex align-items-center gap-2">
                 ${customer.PhoneNumber
-                  ? html`
-                      <span class="small text-muted d-flex align-items-center gap-1">
-                        <i class="bi bi-telephone"></i>${customer.PhoneNumber}
-                        <button
-                          class="btn btn-outline-secondary copy-phone-btn ms-1"
-                          @click=${() => this.#copyPhone(customer.PhoneNumber)}
-                          title="Copy phone"
-                        >
-                          <i class="bi bi-clipboard"></i>
-                        </button>
-                      </span>
-                    `
-                  : html`<span class="small text-muted fst-italic">No phone</span>`}
-              </li>
-            `,
-          )}
+                  ? html`<span class="small text-muted"><i class="bi bi-telephone me-1"></i>${customer.PhoneNumber}</span>`
+                  : ""}
+                <button
+                  class="btn btn-sm btn-outline-success"
+                  @click=${() => this.#openVatModal(customer)}
+                  title=${t("dashboard.missingVat.addVat", "Add VAT / Passport")}
+                ><i class="bi bi-plus-lg"></i></button>
+              </span>
+            </li>
+          `)}
         </ul>
       </div>
     `;
@@ -242,16 +295,17 @@ class DashboardTab extends LitElement {
   render() {
     return html`
       ${filterBar(html`
-        <year-checkbox-dropdown
+        <div class="flex-shrink-0"><year-checkbox-dropdown
           .years=${this._years}
           @change=${this.#onYearChange}
-        ></year-checkbox-dropdown>
-        <rental-filter-dropdown
+        ></year-checkbox-dropdown></div>
+        <div class="flex-shrink-0"><rental-filter-dropdown
           .rentals=${state.allRentals}
           @change=${this.#onRentalChange}
-        ></rental-filter-dropdown>
+        ></rental-filter-dropdown></div>
       `)}
       ${this.#renderMissingVat()}
+      ${this.#renderVatModal()}
       <div class="row g-3 mt-0">
         <div class="col-12 col-md-6">
           <div class="card">

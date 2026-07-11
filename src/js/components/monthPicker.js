@@ -1,113 +1,77 @@
 import { LitElement, html } from "../../lib/lit.min.js";
-import { subscribeLanguage, t } from "../translations.js";
-import { initFixedStrategyDropdown } from "../utils.js";
-
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+import { subscribeLanguage, getLanguage, t } from "../translations.js";
 
 class MonthPicker extends LitElement {
-  static properties = {
-    years: { type: Array },
-    year: { type: Number },
-    month: { type: Number },
-  };
-
-  constructor() {
-    super();
-    this.years = [];
-    this.year = new Date().getFullYear();
-    this.month = new Date().getMonth();
-  }
+  #datePicker = null;
+  #currentMonth = null; // "YYYY-MM"
 
   createRenderRoot() {
     return this;
   }
 
-  firstUpdated() {
-    initFixedStrategyDropdown(this);
+  #toMonthStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   }
+
+  #formatDate = (date) =>
+    new Intl.DateTimeFormat(getLanguage(), { month: "long", year: "numeric" }).format(date);
 
   connectedCallback() {
     super.connectedCallback();
-    this._unsubLang = subscribeLanguage(() => this.requestUpdate());
+    this._unsubLang = subscribeLanguage(() => {
+      this.#datePicker?.update({
+        selectionType: "month",
+        locale: getLanguage(),
+        placeholder: t("filter.month.placeholder", "Select month"),
+        date: this.#currentMonth,
+        inputDateFormat: this.#formatDate,
+        cleaner: false,
+      });
+    });
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this._unsubLang?.();
+    this.#datePicker?.dispose();
+    this.#datePicker = null;
   }
 
-  #monthName(idx) {
-    return t(`calendar.month.${idx}`, MONTH_NAMES[idx]);
-  }
+  firstUpdated() {
+    this.#currentMonth = this.#toMonthStr(new Date());
 
-  #emitChange() {
-    this.dispatchEvent(new CustomEvent("change", {
-      detail: { year: this.year, month: this.month },
-      bubbles: true,
-      composed: true,
-    }));
-  }
+    const el = this.querySelector("div");
+    el.setAttribute("data-coreui-input-read-only", "true");
+    this.#datePicker = new coreui.DatePicker(el, {
+      selectionType: "month",
+      date: this.#currentMonth,
+      locale: getLanguage(),
+      placeholder: t("filter.month.placeholder", "Select month"),
+      inputDateFormat: this.#formatDate,
+      inputReadOnly: true,
+      previewDateOnHover: false,
+      cleaner: false,
+      container: "body",
+      size: "sm",
+    });
 
-  #selectYear(year, event) {
-    event.stopPropagation();
-    this.year = year;
-    this.#emitChange();
-  }
-
-  #selectMonth(month, event) {
-    event.stopPropagation();
-    this.month = month;
-    this.#emitChange();
+    el.addEventListener("dateChange.coreui.date-picker", (event) => {
+      const raw = event.date;
+      if (!raw) return;
+      const str = raw instanceof Date ? this.#toMonthStr(raw) : String(raw);
+      if (!/^\d{4}-\d{2}$/.test(str)) return;
+      this.#currentMonth = str;
+      const [year, month] = str.split("-").map(Number);
+      this.dispatchEvent(new CustomEvent("change", {
+        detail: { year, month: month - 1 },
+        bubbles: true,
+        composed: true,
+      }));
+    });
   }
 
   render() {
-    return html`
-      <div class="dropdown">
-        <button
-          class="btn btn-outline-secondary btn-sm dropdown-toggle"
-          type="button"
-          data-bs-toggle="dropdown"
-          data-bs-auto-close="outside"
-        >
-          ${this.#monthName(this.month)} ${this.year}
-        </button>
-        <div class="dropdown-menu p-2" style="min-width: 260px">
-          <div class="d-flex gap-2">
-            <div class="flex-fill">
-              <div class="text-muted small mb-1 fw-semibold">${t("calendar.picker.year", "Year")}</div>
-              <div style="max-height: 200px; overflow-y: auto">
-                ${this.years.map(
-                  (year) => html`
-                    <button
-                      type="button"
-                      class="dropdown-item ${year === this.year ? "active" : ""}"
-                      @click=${(event) => this.#selectYear(year, event)}
-                    >${year}</button>
-                  `,
-                )}
-              </div>
-            </div>
-            <div class="flex-fill">
-              <div class="text-muted small mb-1 fw-semibold">${t("calendar.picker.month", "Month")}</div>
-              <div style="max-height: 200px; overflow-y: auto">
-                ${MONTH_NAMES.map(
-                  (_name, idx) => html`
-                    <button
-                      type="button"
-                      class="dropdown-item ${idx === this.month ? "active" : ""}"
-                      @click=${(event) => this.#selectMonth(idx, event)}
-                    >${this.#monthName(idx)}</button>
-                  `,
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    return html`<div></div>`;
   }
 }
 

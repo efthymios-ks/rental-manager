@@ -5,7 +5,7 @@ export const state = {
   allExpenses: [],
   allDashboardSummaries: [],
   currentTab: "dashboard",
-  sharedYears: null,
+  sharedYears: [String(new Date().getFullYear())],
   sharedRentalIds: null,
   calendarBookings: [],
   calendarMonth: new Date().getMonth(),

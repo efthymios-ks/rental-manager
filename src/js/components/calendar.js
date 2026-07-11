@@ -1,16 +1,52 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { filterBar } from "./filterBar.js";
 import "./monthPicker.js";
-import "./rentalFilterDropdown.js";
+import "./rentalsMultiSelect.js";
 import { state } from "../state.js";
-import { subscribeLanguage, t } from "../translations.js";
-import { computeCalendarYears, todayStr } from "../utils.js";
+import { subscribeLanguage, getLanguage, t } from "../translations.js";
+import { todayStr } from "../utils.js";
+
+const GANTT_CSS = `
+.cal-gantt { overflow-x: auto; }
+.cal-gantt-row { display: flex; align-items: stretch; min-width: max-content; }
+.cal-gantt-label {
+  width: 110px; min-width: 110px; font-size: 0.75rem; font-weight: 600;
+  padding: 0.3rem 0.5rem; display: flex; align-items: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border-bottom: 1px solid var(--cui-border-color); background: var(--cui-white);
+  position: sticky; left: 0; z-index: 1;
+}
+.cal-gantt-cells { display: flex; }
+.cal-gantt-hcell, .cal-gantt-cell {
+  width: 28px; min-width: 28px; height: 32px;
+  border-right: 1px solid var(--cui-border-color);
+  border-bottom: 1px solid var(--cui-border-color);
+  box-sizing: border-box;
+}
+.cal-gantt-hcell {
+  height: 48px; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; padding-bottom: 4px;
+  font-size: 0.65rem; font-weight: 700; color: var(--cui-secondary-color); position: relative;
+}
+.cal-gantt-weekday { font-size: 0.55rem; font-weight: 400; opacity: 0.7; line-height: 1.2; }
+.cal-gantt-month-label {
+  font-size: 0.58rem; color: var(--cui-secondary-color);
+  position: absolute; top: 2px; left: 0; right: 0; text-align: center;
+}
+.cal-gantt-occupied { cursor: pointer; opacity: 0.85; }
+.cal-gantt-occupied:hover { opacity: 1; }
+.cal-gantt-today { background: var(--cui-warning-bg-subtle) !important; }
+.cal-gantt-sep { border-left: 2px solid var(--cui-secondary-color) !important; }
+`;
+
+const _ganttStyle = document.createElement("style");
+_ganttStyle.textContent = GANTT_CSS;
+document.head.appendChild(_ganttStyle);
 
 class CalendarTab extends LitElement {
   static properties = {
     _year: { state: true },
     _month: { state: true },
-    _years: { state: true },
     _rentals: { state: true },
     _rentalIds: { state: true },
   };
@@ -22,7 +58,6 @@ class CalendarTab extends LitElement {
     super();
     this._year = new Date().getFullYear();
     this._month = new Date().getMonth();
-    this._years = [];
     this._rentals = [];
     this._rentalIds = null;
   }
@@ -48,7 +83,6 @@ class CalendarTab extends LitElement {
     this.#bookings = bookings;
     this.#buildDayBookings(bookings);
 
-    this._years = computeCalendarYears();
     this._rentalIds = state.sharedRentalIds;
 
     this.updateComplete.then(() => {
@@ -76,30 +110,6 @@ class CalendarTab extends LitElement {
         current.setDate(current.getDate() + 1);
       }
     });
-  }
-
-  #prev() {
-    let month = this._month - 1;
-    let year = this._year;
-    if (month < 0) {
-      month = 11;
-      year--;
-    }
-
-    this._month = month;
-    this._year = year;
-  }
-
-  #next() {
-    let month = this._month + 1;
-    let year = this._year;
-    if (month > 11) {
-      month = 0;
-      year++;
-    }
-
-    this._month = month;
-    this._year = year;
   }
 
   #onMonthPickerChange(event) {
@@ -140,7 +150,7 @@ class CalendarTab extends LitElement {
     });
     document.getElementById("calendarDayModalBody").innerHTML =
       `<ul class="list-group list-group-flush">${items.join("")}</ul>`;
-    new bootstrap.Modal(document.getElementById("calendarDayModal")).show();
+    new coreui.Modal(document.getElementById("calendarDayModal")).show();
   }
 
   #getDates() {
@@ -157,7 +167,7 @@ class CalendarTab extends LitElement {
     const rentalIds = this._rentalIds ?? [];
     const dates = this.#getDates();
     const today = todayStr();
-    const calendarColors = ["var(--bs-primary)", "var(--bs-secondary)"];
+    const calendarColors = ["var(--cui-primary)", "var(--cui-secondary)"];
 
     const bookingMap = {};
     const bookingColorMap = {};
@@ -195,10 +205,16 @@ class CalendarTab extends LitElement {
         ? this._rentals.filter((rental) => rentalIds.includes(rental.Id))
         : this._rentals;
 
+    const weekdayFmt = new Intl.DateTimeFormat(getLanguage(), { weekday: "short" });
     const headerCells = dates.map((dateAsString) => {
-      const dayNum = parseInt(dateAsString.substring(8));
+      const [y, m, d] = dateAsString.split("-").map(Number);
+      const dayNum = d;
+      const weekday = weekdayFmt.format(new Date(y, m - 1, d));
       const todayCls = dateAsString === today ? " cal-gantt-today" : "";
-      return html`<div class="cal-gantt-hcell${todayCls}">${dayNum}</div>`;
+      return html`<div class="cal-gantt-hcell${todayCls}">
+        <span class="cal-gantt-weekday">${weekday}</span>
+        <span>${dayNum}</span>
+      </div>`;
     });
 
     const rows = filteredRentals.map((rental) => {
@@ -206,7 +222,7 @@ class CalendarTab extends LitElement {
         const booking = bookingMap[rental.Id]?.[dateAsString];
         const todayCls = dateAsString === today ? " cal-gantt-today" : "";
         if (booking) {
-          const color = bookingColorMap[booking.Id] || "var(--bs-primary)";
+          const color = bookingColorMap[booking.Id] || "var(--cui-primary)";
           return html`<div
             class="cal-gantt-cell cal-gantt-occupied"
             style="background:${color};"
@@ -219,7 +235,7 @@ class CalendarTab extends LitElement {
       });
       return html`
         <div class="cal-gantt-row">
-          <div class="cal-gantt-label" style="border-left:3px solid var(--bs-success)">
+          <div class="cal-gantt-label" style="border-left:3px solid var(--cui-success)">
             ${rental.Name}
           </div>
           <div class="cal-gantt-cells">${cells}</div>
@@ -229,26 +245,11 @@ class CalendarTab extends LitElement {
 
     return html`
       ${filterBar(html`
-        <rental-filter-dropdown
+        <div class="flex-shrink-0"><month-picker @change=${this.#onMonthPickerChange}></month-picker></div>
+        <div class="flex-shrink-0"><rental-filter-dropdown
           .rentals=${state.allRentals}
           @change=${this.#onRentalChange}
-        ></rental-filter-dropdown>
-        <a
-          href="#"
-          class="text-decoration-none text-muted fs-5"
-          @click=${(event) => { event.preventDefault(); this.#prev(); }}
-        >&#8592;</a>
-        <month-picker
-          .years=${this._years}
-          .year=${this._year}
-          .month=${this._month}
-          @change=${this.#onMonthPickerChange}
-        ></month-picker>
-        <a
-          href="#"
-          class="text-decoration-none text-muted fs-5"
-          @click=${(event) => { event.preventDefault(); this.#next(); }}
-        >&#8594;</a>
+        ></rental-filter-dropdown></div>
       `)}
       <div class="card">
         <div class="card-header"><i class="bi bi-calendar3 me-1"></i> ${t("calendar.title", "Calendar")}</div>

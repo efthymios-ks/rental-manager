@@ -39,7 +39,16 @@ class DatePickerInput extends LitElement {
     this.#value = v || "";
     if (this.#picker) {
       this.#picker.update(this.#formatOptions());
+      this.#patchInputs();
     }
+  }
+
+  #patchInputs() {
+    const label = t("common.selectDate", "Select date");
+    this.querySelectorAll("input.date-picker-input").forEach((input, i) => {
+      input.name = `date-picker-${i}`;
+      input.setAttribute("aria-label", label);
+    });
   }
 
   createRenderRoot() {
@@ -56,6 +65,8 @@ class DatePickerInput extends LitElement {
       cleaner: false,
       container: "body",
     });
+
+    this.#patchInputs();
 
     el.addEventListener("dateChange.coreui.date-picker", (e) => {
       const date = e.date;
@@ -76,6 +87,7 @@ class DatePickerInput extends LitElement {
     super.connectedCallback();
     this._unsubLang = subscribeLanguage(() => {
       this.#picker?.update(this.#formatOptions());
+      this.#patchInputs();
     });
   }
 

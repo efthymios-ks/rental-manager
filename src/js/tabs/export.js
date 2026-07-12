@@ -32,6 +32,7 @@ class ExportTab extends LitElement {
     this._unsubLang = subscribeLanguage(() => {
       this.requestUpdate();
       this.#dateRangePicker?.update(this.#rangePickerFormatOptions());
+      this.#patchRangePickerInputs();
     });
   }
 
@@ -72,6 +73,7 @@ class ExportTab extends LitElement {
       size: "sm",
       ...this.#rangePickerFormatOptions(),
     });
+    this.#patchRangePickerInputs();
 
     el.addEventListener("startDateChange.coreui.date-range-picker", (e) => {
       if (e.date) {
@@ -92,6 +94,16 @@ class ExportTab extends LitElement {
         this.#toDate = "";
       }
       this.#applyFilters();
+    });
+  }
+
+  #patchRangePickerInputs() {
+    const el = this.querySelector("#exportDateRange");
+    if (!el) return;
+    const labels = [t("export.field.from", "From"), t("export.field.to", "To")];
+    el.querySelectorAll("input.date-picker-input").forEach((input, i) => {
+      if (!input.name) input.name = `export-date-${i}`;
+      input.setAttribute("aria-label", labels[i] ?? labels[0]);
     });
   }
 
@@ -121,6 +133,7 @@ class ExportTab extends LitElement {
       endDate: `${currentYear}-12`,
       ...this.#rangePickerFormatOptions(),
     });
+    this.#patchRangePickerInputs();
 
     this.#applyFilters();
     this.updateComplete.then(() => {

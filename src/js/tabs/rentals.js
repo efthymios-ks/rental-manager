@@ -300,9 +300,9 @@ class RentalsTab extends LitElement {
     const pastValues = this.#pastValues();
     return html`
       <div class="mb-1">
-        <label class="form-label fw-semibold small mb-1">
+        <span class="form-label fw-semibold small mb-1 d-block">
           <i class="bi bi-tags me-1"></i>${t("rentals.field.extraInfo", "Extra Info")}
-        </label>
+        </span>
         ${entries.map((entry, i) => html`
           <div class="d-flex gap-1 mb-1 align-items-center">
             <input-autocomplete
@@ -384,7 +384,7 @@ class RentalsTab extends LitElement {
                     placeholder=${f.label}
                     ?readonly=${!isEdit}
                   />
-                  <label><i class="bi ${f.icon} me-1"></i>${f.label}${f.required ? html` <span class="text-danger">*</span>` : ""}</label>
+                  <label for=${f.id}><i class="bi ${f.icon} me-1"></i>${f.label}${f.required ? html` <span class="text-danger">*</span>` : ""}</label>
                 </div>
               `)}
               ${isEdit
@@ -433,31 +433,31 @@ class RentalsTab extends LitElement {
             <div class="modal-body">
               <div class="form-floating mb-3">
                 <input type="text" id="addRentalName" class="form-control" placeholder=${t("rentals.field.name", "Name")} />
-                <label><i class="bi bi-house-door me-1"></i>${t("rentals.field.name", "Name")} <span class="text-danger">*</span></label>
+                <label for="addRentalName"><i class="bi bi-house-door me-1"></i>${t("rentals.field.name", "Name")} <span class="text-danger">*</span></label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addRentalAddress" class="form-control" placeholder=${t("rentals.field.address", "Address")} />
-                <label><i class="bi bi-geo-alt me-1"></i>${t("rentals.field.address", "Address")}</label>
+                <label for="addRentalAddress"><i class="bi bi-geo-alt me-1"></i>${t("rentals.field.address", "Address")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addRentalFloorArea" class="form-control" placeholder=${t("rentals.field.floorArea", "Floor Area (m²)")} />
-                <label><i class="bi bi-rulers me-1"></i>${t("rentals.field.floorArea", "Floor Area (m²)")}</label>
+                <label for="addRentalFloorArea"><i class="bi bi-rulers me-1"></i>${t("rentals.field.floorArea", "Floor Area (m²)")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addRentalPropertyRegistryNumber" class="form-control" placeholder=${t("rentals.field.propertyRegistry", "Property Registry Number")} />
-                <label><i class="bi bi-file-earmark-text me-1"></i>${t("rentals.field.propertyRegistry", "Property Registry Number")}</label>
+                <label for="addRentalPropertyRegistryNumber"><i class="bi bi-file-earmark-text me-1"></i>${t("rentals.field.propertyRegistry", "Property Registry Number")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addRentalElectricitySupplyNumber" class="form-control" placeholder=${t("rentals.field.electricitySupply", "Electricity Supply Number")} />
-                <label><i class="bi bi-lightning me-1"></i>${t("rentals.field.electricitySupply", "Electricity Supply Number")}</label>
+                <label for="addRentalElectricitySupplyNumber"><i class="bi bi-lightning me-1"></i>${t("rentals.field.electricitySupply", "Electricity Supply Number")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addRentalWaterSupplyNumber" class="form-control" placeholder=${t("rentals.field.waterSupply", "Water Supply Number")} />
-                <label><i class="bi bi-droplet me-1"></i>${t("rentals.field.waterSupply", "Water Supply Number")}</label>
+                <label for="addRentalWaterSupplyNumber"><i class="bi bi-droplet me-1"></i>${t("rentals.field.waterSupply", "Water Supply Number")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addRentalInternetPhoneNumber" class="form-control" placeholder=${t("rentals.field.internetPhone", "Internet Phone Number")} />
-                <label><i class="bi bi-telephone me-1"></i>${t("rentals.field.internetPhone", "Internet Phone Number")}</label>
+                <label for="addRentalInternetPhoneNumber"><i class="bi bi-telephone me-1"></i>${t("rentals.field.internetPhone", "Internet Phone Number")}</label>
               </div>
               ${this.#renderExtraInfoEditor(false)}
               ${this.#renderErrors(this._addErrors)}

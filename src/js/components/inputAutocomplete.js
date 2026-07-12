@@ -55,6 +55,13 @@ class InputAutocomplete extends LitElement {
       if (input) input.value = this.#value;
     }
 
+    const input = this.querySelector("input.autocomplete-input");
+    if (input) {
+      input.setAttribute("aria-label", this.label || this.placeholder);
+      const labelEl = this.querySelector("label.form-label");
+      if (labelEl && input.id) labelEl.setAttribute("for", input.id);
+    }
+
     el.addEventListener("input.coreui.autocomplete", (e) => {
       if (this.#justSelected) { this.#justSelected = false; return; }
       this.#value = e.value ?? "";
@@ -77,7 +84,14 @@ class InputAutocomplete extends LitElement {
     if (changedProperties.has("placeholder")) {
       this.#autocomplete.update({ placeholder: this.placeholder });
       const input = this.querySelector("input.autocomplete-input");
-      if (input) input.placeholder = this.placeholder;
+      if (input) {
+        input.placeholder = this.placeholder;
+        input.setAttribute("aria-label", this.label || this.placeholder);
+      }
+    }
+    if (changedProperties.has("label")) {
+      const input = this.querySelector("input.autocomplete-input");
+      if (input) input.setAttribute("aria-label", this.label || this.placeholder);
     }
   }
 

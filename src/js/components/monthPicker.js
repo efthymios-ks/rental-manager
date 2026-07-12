@@ -16,6 +16,14 @@ class MonthPicker extends LitElement {
   #formatDate = (date) =>
     new Intl.DateTimeFormat(getLanguage(), { month: "long", year: "numeric" }).format(date);
 
+  #patchInputs() {
+    const label = t("filter.month.placeholder", "Select month");
+    this.querySelectorAll("input.date-picker-input").forEach((input, i) => {
+      input.name = `month-picker-${i}`;
+      input.setAttribute("aria-label", label);
+    });
+  }
+
   connectedCallback() {
     super.connectedCallback();
     this._unsubLang = subscribeLanguage(() => {
@@ -27,6 +35,7 @@ class MonthPicker extends LitElement {
         inputDateFormat: this.#formatDate,
         cleaner: false,
       });
+      this.#patchInputs();
     });
   }
 
@@ -54,6 +63,8 @@ class MonthPicker extends LitElement {
       container: "body",
       size: "sm",
     });
+
+    this.#patchInputs();
 
     el.addEventListener("dateChange.coreui.date-picker", (event) => {
       const raw = event.date;

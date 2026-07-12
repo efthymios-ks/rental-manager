@@ -41,6 +41,8 @@ _style.textContent = `
 `;
 document.head.appendChild(_style);
 
+let _calcUidCounter = 0;
+
 class AmountCalculator extends LitElement {
   static properties = {
     label: { type: String },
@@ -52,6 +54,7 @@ class AmountCalculator extends LitElement {
   };
 
   #base = 0;
+  #inputId = `calc-amount-${++_calcUidCounter}`;
 
   constructor() {
     super();
@@ -142,6 +145,7 @@ class AmountCalculator extends LitElement {
         <div class="form-floating flex-grow-1">
           <input
             type="text"
+            id=${this.#inputId}
             class="form-control calc-amount"
             inputmode="decimal"
             placeholder="0.00"
@@ -149,7 +153,7 @@ class AmountCalculator extends LitElement {
             @input=${(e) => { const v = e.target.value.replace(",", "."); if (v !== e.target.value) e.target.value = v; this._value = v; }}
             ?readonly=${this._open}
           />
-          <label>
+          <label for=${this.#inputId}>
             ${this.icon ? html`<i class="bi ${this.icon} me-1"></i>` : ""}${this.label}
           </label>
         </div>

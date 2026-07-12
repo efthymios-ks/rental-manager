@@ -67,12 +67,14 @@ class CustomerSelect extends LitElement {
     this.#currentId = this.selectedId ?? null;
     this.#buildOptions();
     const select = this.querySelector("select");
+    select.setAttribute("aria-label", t("common.field.customer", "Customer"));
     this.#multiSelect = new coreui.MultiSelect(select, {
       multiple: false,
       search: true,
       placeholder: t("common.field.customer", "Customer"),
       cleaner: false,
     });
+    this.querySelector(".form-multi-select")?.setAttribute("aria-label", t("common.field.customer", "Customer"));
 
     select.addEventListener("changed.coreui.multi-select", (e) => {
       if (this.#programmatic) return;
@@ -113,7 +115,7 @@ class CustomerSelect extends LitElement {
   }
 
   render() {
-    return html`<div class="mb-3"><select></select></div>`;
+    return html`<div class="mb-3"><select name="customer-select" aria-label=${t("common.field.customer", "Customer")}></select></div>`;
   }
 }
 

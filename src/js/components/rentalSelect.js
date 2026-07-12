@@ -1,6 +1,8 @@
 import { LitElement, html } from "../../lib/lit.min.js";
 import { subscribeLanguage, t } from "../translations.js";
 
+let _rentalSelectUid = 0;
+
 class RentalSelect extends LitElement {
   static properties = {
     rentals: { type: Array },
@@ -8,6 +10,8 @@ class RentalSelect extends LitElement {
     defaultNone: { type: Boolean },
     invalid: { type: Boolean },
   };
+
+  #selectId = `rental-select-${++_rentalSelectUid}`;
 
   constructor() {
     super();
@@ -38,7 +42,7 @@ class RentalSelect extends LitElement {
   render() {
     return html`
       <div class="form-floating mb-3">
-        <select class=${`form-select${this.invalid ? " is-invalid" : ""}`}>
+        <select id=${this.#selectId} class=${`form-select${this.invalid ? " is-invalid" : ""}`}>
           ${this.defaultNone ? html`<option value="" .selected=${!this.selectedId}></option>` : ""}
           ${this.rentals.map(
             (rental) => html`
@@ -48,7 +52,7 @@ class RentalSelect extends LitElement {
             `,
           )}
         </select>
-        <label><i class="bi bi-house-door me-1"></i>${t("common.field.rental", "Rental")}</label>
+        <label for=${this.#selectId}><i class="bi bi-house-door me-1"></i>${t("common.field.rental", "Rental")}</label>
       </div>
     `;
   }

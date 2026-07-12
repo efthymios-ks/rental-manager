@@ -327,20 +327,20 @@ class ExpensesTab extends LitElement {
                 <div class="form-floating mb-3">
                   <input type="text" id="viewExpenseName" class="form-control" readonly
                     placeholder=${t("expenses.field.name", "Name")} />
-                  <label><i class="bi bi-tag me-1"></i>${t("expenses.field.name", "Name")}</label>
+                  <label for="viewExpenseName"><i class="bi bi-tag me-1"></i>${t("expenses.field.name", "Name")}</label>
                 </div>
               `}
               ${isEdit ? html`
                 <div class="mb-3">
-                  <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
+                  <span class="form-label fw-semibold small d-block"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</span>
                   <rental-checkboxes id="viewExpenseRentalCheckboxes"></rental-checkboxes>
                 </div>
               ` : html`
                 <div class="form-floating mb-3">
-                  <input type="text" class="form-control" readonly
+                  <input type="text" id="viewExpenseRentals" class="form-control" readonly
                     placeholder=${t("expenses.field.rentals", "Rentals")}
                     .value=${rentalNames} />
-                  <label><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
+                  <label for="viewExpenseRentals"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
                 </div>
               `}
               ${isEdit ? html`
@@ -355,20 +355,20 @@ class ExpensesTab extends LitElement {
                 <div class="form-floating mb-3">
                   <input type="text" id="viewExpenseAmount" class="form-control" readonly
                     placeholder="0.00" />
-                  <label><i class="bi bi-currency-euro me-1"></i>${t("expenses.field.amount", "Amount (€)")}</label>
+                  <label for="viewExpenseAmount"><i class="bi bi-currency-euro me-1"></i>${t("expenses.field.amount", "Amount (€)")}</label>
                 </div>
               `}
               ${isEdit ? html`
                 <div class="mb-3">
-                  <label class="form-label small fw-semibold"><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
+                  <span class="form-label small fw-semibold d-block"><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</span>
                   <date-picker-input id="viewExpenseDate"></date-picker-input>
                 </div>
               ` : html`
                 <div class="form-floating mb-3">
-                  <input type="text" class="form-control" readonly
+                  <input type="text" id="viewExpenseDateDisplay" class="form-control" readonly
                     placeholder=${t("expenses.field.date", "Date")}
                     .value=${e?.DateCreated ? formatDate(e.DateCreated) : ""} />
-                  <label><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
+                  <label for="viewExpenseDateDisplay"><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
                 </div>
               `}
               ${isEdit ? html`
@@ -383,7 +383,7 @@ class ExpensesTab extends LitElement {
                 <div class="form-floating mb-3">
                   <input type="text" id="viewExpenseNotes" class="form-control" readonly
                     placeholder=${t("expenses.field.notes", "Notes")} />
-                  <label>${t("expenses.field.notes", "Notes")}</label>
+                  <label for="viewExpenseNotes">${t("expenses.field.notes", "Notes")}</label>
                 </div>
               `}
               ${isEdit ? this.#renderErrors(this._viewErrors) : ""}
@@ -428,7 +428,7 @@ class ExpensesTab extends LitElement {
                 .suggestions=${uniqueByField(state.allExpenses, "Name")}
               ></input-autocomplete>
               <div class="mb-3">
-                <label class="form-label fw-semibold small"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</label>
+                <span class="form-label fw-semibold small d-block"><i class="bi bi-house-door me-1"></i>${t("expenses.field.rentals", "Rentals")}</span>
                 <rental-checkboxes id="addExpenseRentalCheckboxes"></rental-checkboxes>
               </div>
               <amount-calculator
@@ -439,7 +439,7 @@ class ExpensesTab extends LitElement {
                 @calcstatechange=${(e) => { this._calcOpen = e.detail.open; }}
               ></amount-calculator>
               <div class="mb-3">
-                <label class="form-label small fw-semibold"><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</label>
+                <span class="form-label small fw-semibold d-block"><i class="bi bi-calendar-event me-1"></i>${t("expenses.field.date", "Date")}</span>
                 <date-picker-input id="addExpenseDate"></date-picker-input>
               </div>
               <input-autocomplete

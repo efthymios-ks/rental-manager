@@ -130,6 +130,7 @@ class DashboardTab extends LitElement {
                 type="text"
                 id="vatInput"
                 class="form-control"
+                aria-label=${t("dashboard.missingVat.placeholder", "VAT / Passport number")}
                 placeholder=${t("dashboard.missingVat.placeholder", "VAT / Passport number")}
                 ?disabled=${this._editingSaving}
                 @keydown=${(e) => { if (e.key === "Enter") this.#saveVat(); }}

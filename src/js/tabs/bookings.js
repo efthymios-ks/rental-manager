@@ -363,17 +363,16 @@ class BookingsTab extends LitElement {
                 <div class="form-floating mb-3">
                   <input type="text" id="viewBookingRental" class="form-control" readonly
                     placeholder=${t("common.field.rental", "Rental")} />
-                  <label><i class="bi bi-house-door me-1"></i>${t("common.field.rental", "Rental")}</label>
+                  <label for="viewBookingRental"><i class="bi bi-house-door me-1"></i>${t("common.field.rental", "Rental")}</label>
                 </div>
                 <div class="form-floating mb-3">
                   <input type="text" id="viewBookingCustomer" class="form-control" readonly
                     placeholder=${t("common.field.customer", "Customer")} />
-                  <label><i class="bi bi-person me-1"></i>${t("common.field.customer", "Customer")}</label>
+                  <label for="viewBookingCustomer"><i class="bi bi-person me-1"></i>${t("common.field.customer", "Customer")}</label>
                 </div>
               `}
               <div class="row mb-3">
                 <div class="col">
-                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
                   ${isEdit ? html`
                     <date-picker-input id="viewBookingArrival"
                       @change=${() => updateDurationField("viewBookingArrival", "viewBookingDeparture", "viewBookingDuration")}>
@@ -382,12 +381,11 @@ class BookingsTab extends LitElement {
                     <div class="form-floating">
                       <input type="text" id="viewBookingArrival" class="form-control" readonly
                         placeholder=${t("bookings.field.arrival", "Arrival")} />
-                      <label>${t("bookings.field.arrival", "Arrival")}</label>
+                      <label for="viewBookingArrival"><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
                     </div>
                   `}
                 </div>
                 <div class="col">
-                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
                   ${isEdit ? html`
                     <date-picker-input id="viewBookingDeparture"
                       @change=${() => updateDurationField("viewBookingArrival", "viewBookingDeparture", "viewBookingDuration")}>
@@ -396,7 +394,7 @@ class BookingsTab extends LitElement {
                     <div class="form-floating">
                       <input type="text" id="viewBookingDeparture" class="form-control" readonly
                         placeholder=${t("bookings.field.departure", "Departure")} />
-                      <label>${t("bookings.field.departure", "Departure")}</label>
+                      <label for="viewBookingDeparture"><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
                     </div>
                   `}
                 </div>
@@ -404,19 +402,19 @@ class BookingsTab extends LitElement {
               <div class="form-floating mb-3">
                 <input type="text" id="viewBookingDuration" class="form-control" readonly
                   placeholder=${t("bookings.field.duration", "Duration")} />
-                <label><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
+                <label for="viewBookingDuration"><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="viewBookingAmount" class="form-control" placeholder="0.00"
                   inputmode="decimal" ?readonly=${!isEdit}
                   @input=${(e) => { const v = e.target.value.replace(",", "."); if (v !== e.target.value) e.target.value = v; }} />
-                <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
+                <label for="viewBookingAmount"><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
               </div>
               ${isEdit ? html`
                 <input-autocomplete
                   id="viewBookingNotes"
                   class="mb-3"
-                  label=${t("bookings.field.notes", "Notes")}
+                  .plain=${true}
                   placeholder=${t("bookings.field.notes", "Notes")}
                   .suggestions=${uniqueNotes(state.allBookings)}
                 ></input-autocomplete>
@@ -424,7 +422,7 @@ class BookingsTab extends LitElement {
                 <div class="form-floating mb-3">
                   <input type="text" id="viewBookingNotes" class="form-control" readonly
                     placeholder=${t("bookings.field.notes", "Notes")} />
-                  <label>${t("bookings.field.notes", "Notes")}</label>
+                  <label for="viewBookingNotes">${t("bookings.field.notes", "Notes")}</label>
                 </div>
               `}
               <div class="form-check form-switch mb-3">
@@ -476,13 +474,11 @@ class BookingsTab extends LitElement {
               ></customer-select>
               <div class="row mb-3">
                 <div class="col">
-                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
                   <date-picker-input id="addBookingArrival"
                     @change=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")}>
                   </date-picker-input>
                 </div>
                 <div class="col">
-                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
                   <date-picker-input id="addBookingDeparture"
                     @change=${() => updateDurationField("addBookingArrival", "addBookingDeparture", "addBookingDuration")}>
                   </date-picker-input>
@@ -490,17 +486,17 @@ class BookingsTab extends LitElement {
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addBookingDuration" class="form-control" placeholder=${t("bookings.field.duration", "Duration")} readonly />
-                <label><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
+                <label for="addBookingDuration"><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addBookingAmount" class="form-control" placeholder="0.00" inputmode="decimal"
                   @input=${(e) => { const v = e.target.value.replace(",", "."); if (v !== e.target.value) e.target.value = v; }} />
-                <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
+                <label for="addBookingAmount"><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
               </div>
               <input-autocomplete
                 id="addBookingNotes"
                 class="mb-3"
-                label=${t("bookings.field.notes", "Notes")}
+                .plain=${true}
                 placeholder=${t("bookings.field.notes", "Notes")}
                 .suggestions=${uniqueNotes(state.allBookings)}
               ></input-autocomplete>

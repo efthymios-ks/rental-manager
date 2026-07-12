@@ -324,7 +324,7 @@ class CustomersTab extends LitElement {
   #renderRatingButtons(currentRating, onChange) {
     return html`
       <div class="mb-3">
-        <label class="form-label fw-semibold small mb-2"><i class="bi bi-star me-1"></i>${t("customers.field.rating", "Rating")}</label>
+        <span class="form-label fw-semibold small mb-2 d-block"><i class="bi bi-star me-1"></i>${t("customers.field.rating", "Rating")}</span>
         <div class="d-flex gap-2">
           <button type="button"
             class="btn btn-sm ${currentRating === -1 ? "btn-danger" : "btn-outline-danger"}"
@@ -344,7 +344,7 @@ class CustomersTab extends LitElement {
   #renderRatingView(rating) {
     return html`
       <div class="mb-3">
-        <label class="form-label fw-semibold small mb-2"><i class="bi bi-star me-1"></i>${t("customers.field.rating", "Rating")}</label>
+        <span class="form-label fw-semibold small mb-2 d-block"><i class="bi bi-star me-1"></i>${t("customers.field.rating", "Rating")}</span>
         <div>
           ${rating === 1
             ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
@@ -374,19 +374,19 @@ class CustomersTab extends LitElement {
                 <input type="text" id="viewCustomerFullName" class="form-control"
                   placeholder=${t("customers.field.fullName", "Full Name")}
                   ?readonly=${!isEdit} />
-                <label><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
+                <label for="viewCustomerFullName"><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="viewCustomerVat" class="form-control"
                   placeholder=${t("customers.field.vatOrPassport", "VAT / Passport")}
                   ?readonly=${!isEdit} />
-                <label><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
+                <label for="viewCustomerVat"><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="viewCustomerPhone" class="form-control"
                   placeholder=${t("customers.field.phone", "Phone")}
                   ?readonly=${!isEdit} />
-                <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
+                <label for="viewCustomerPhone"><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
               </div>
               ${isEdit
                 ? this.#renderRatingButtons(this._viewRating, (v) => this._viewRating = v)
@@ -404,7 +404,7 @@ class CustomersTab extends LitElement {
                 <div class="form-floating mb-3">
                   <input type="text" id="viewCustomerNotes" class="form-control" readonly
                     placeholder=${t("customers.field.notes", "Notes")} />
-                  <label>${t("customers.field.notes", "Notes")}</label>
+                  <label for="viewCustomerNotes">${t("customers.field.notes", "Notes")}</label>
                 </div>
               `}
               <div class="form-check form-switch mb-3">
@@ -448,15 +448,15 @@ class CustomersTab extends LitElement {
             <div class="modal-body">
               <div class="form-floating mb-3">
                 <input type="text" id="addCustomerFullName" class="form-control" placeholder=${t("customers.field.fullName", "Full Name")} />
-                <label><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
+                <label for="addCustomerFullName"><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addCustomerVat" class="form-control" placeholder=${t("customers.field.vatOrPassport", "VAT / Passport")} />
-                <label><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
+                <label for="addCustomerVat"><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addCustomerPhone" class="form-control" placeholder=${t("customers.field.phone", "Phone")} />
-                <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
+                <label for="addCustomerPhone"><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
               </div>
               ${this.#renderRatingButtons(this._addRating, (v) => this._addRating = v)}
               <input-autocomplete
@@ -548,6 +548,7 @@ class CustomersTab extends LitElement {
           id="customerSearchInput"
           class="form-control form-control-sm flex-shrink-0"
           style="width: 240px"
+          aria-label=${t("customers.filter.search.placeholder", "Search...")}
           placeholder=${t("customers.filter.search.placeholder", "Search...")}
           @input=${this.#onSearch}
         />

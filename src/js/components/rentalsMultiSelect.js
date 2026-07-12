@@ -100,6 +100,7 @@ class RentalsMultiSelect extends LitElement {
     this.#buildNativeOptions();
 
     const select = this.querySelector("select");
+    select.setAttribute("aria-label", t("rentals.title", "Rentals"));
     this.#multiSelect = new coreui.MultiSelect(select, {
       multiple: true,
       selectionType: "counter",
@@ -109,6 +110,7 @@ class RentalsMultiSelect extends LitElement {
       cleaner: this.cleaner,
       search: false,
     });
+    this.querySelector(".form-multi-select")?.setAttribute("aria-label", t("rentals.title", "Rentals"));
 
     this._onOtherShow = (e) => { if (e.target !== select) this.#multiSelect.hide(); };
     document.addEventListener("show.coreui.multi-select", this._onOtherShow);
@@ -132,7 +134,7 @@ class RentalsMultiSelect extends LitElement {
   }
 
   render() {
-    return html`<select multiple></select>`;
+    return html`<select multiple name="rental-filter" aria-label=${t("rentals.title", "Rentals")}></select>`;
   }
 }
 

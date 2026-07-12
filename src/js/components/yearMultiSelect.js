@@ -110,6 +110,7 @@ class YearMultiSelect extends LitElement {
     this.#buildNativeOptions();
 
     const select = this.querySelector("select");
+    select.setAttribute("aria-label", t("filter.year.unit", "Years"));
     this.#multiSelect = new coreui.MultiSelect(select, {
       multiple: true,
       selectionType: "counter",
@@ -119,6 +120,7 @@ class YearMultiSelect extends LitElement {
       cleaner: this.cleaner,
       search: false,
     });
+    this.querySelector(".form-multi-select")?.setAttribute("aria-label", t("filter.year.unit", "Years"));
 
     this._onOtherShow = (e) => { if (e.target !== select) this.#multiSelect.hide(); };
     document.addEventListener("show.coreui.multi-select", this._onOtherShow);
@@ -142,7 +144,7 @@ class YearMultiSelect extends LitElement {
   }
 
   render() {
-    return html`<select multiple></select>`;
+    return html`<select multiple name="year-filter" aria-label=${t("filter.year.unit", "Years")}></select>`;
   }
 }
 

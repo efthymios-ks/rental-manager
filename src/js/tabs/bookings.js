@@ -24,9 +24,11 @@ class BookingsTab extends LitElement {
     _filteredBookings: { state: true },
     _years: { state: true },
     _addErrors: { state: true },
-    _editErrors: { state: true },
     _addSaving: { state: true },
-    _editSaving: { state: true },
+    _viewBooking: { state: true },
+    _viewMode: { state: true },
+    _viewErrors: { state: true },
+    _viewSaving: { state: true },
   };
 
   #allBookings = [];
@@ -38,9 +40,11 @@ class BookingsTab extends LitElement {
     this._filteredBookings = [];
     this._years = [];
     this._addErrors = [];
-    this._editErrors = [];
     this._addSaving = false;
-    this._editSaving = false;
+    this._viewBooking = null;
+    this._viewMode = "view";
+    this._viewErrors = [];
+    this._viewSaving = false;
   }
 
   createRenderRoot() {
@@ -136,6 +140,124 @@ class BookingsTab extends LitElement {
     this.#applyFilters();
   }
 
+  // --- view/edit modal ---
+
+  #openViewModal(booking) {
+    this._viewBooking = booking;
+    this._viewMode = "view";
+    this._viewErrors = [];
+    this._viewSaving = false;
+    this.updateComplete.then(() => {
+      this.#populateFields();
+      coreui.Modal.getOrCreateInstance(this.querySelector("#viewBookingModal")).show();
+    });
+  }
+
+  #populateFields() {
+    const b = this._viewBooking;
+    if (!b) return;
+    const isEdit = this._viewMode === "edit";
+    const set = (id, val) => { const el = this.querySelector(`#${id}`); if (el) el.value = val ?? ""; };
+
+    if (isEdit) {
+      const rentalEl = this.querySelector("#viewBookingRental");
+      if (rentalEl) { rentalEl.rentals = state.allRentals; rentalEl.selectedId = b.RentalId; }
+      const customerEl = this.querySelector("#viewBookingCustomer");
+      if (customerEl) { customerEl.customers = state.allCustomers; customerEl.selectedId = b.CustomerId; }
+      set("viewBookingArrival", b.ArrivalDate);
+      set("viewBookingDeparture", b.DepartureDate);
+    } else {
+      set("viewBookingRental", b.rental?.Name ?? b.RentalId);
+      set("viewBookingCustomer", b.customer?.FullName ?? b.CustomerId);
+      set("viewBookingArrival", b.ArrivalDate ? formatDate(b.ArrivalDate) : "");
+      set("viewBookingDeparture", b.DepartureDate ? formatDate(b.DepartureDate) : "");
+    }
+
+    set("viewBookingDuration", `${b.DurationDays} ${b.DurationDays !== 1 ? t("common.days", "days") : t("common.day", "day")}`);
+    set("viewBookingAmount", parseFloat(b.AmountEuros || 0).toFixed(2));
+    set("viewBookingNotes", b.Notes || "");
+    const offRecordEl = this.querySelector("#viewBookingOffRecord");
+    if (offRecordEl) offRecordEl.checked = !!b.OffRecord;
+  }
+
+  #enterEditMode() {
+    this._viewErrors = [];
+    this._viewMode = "edit";
+    this.updateComplete.then(() => this.#populateFields());
+  }
+
+  #cancelEdit() {
+    this._viewMode = "view";
+    this._viewErrors = [];
+    this.updateComplete.then(() => this.#populateFields());
+  }
+
+  #handleDelete() {
+    const booking = this._viewBooking;
+    showConfirm(
+      t("bookings.confirmDelete.title", "Delete Booking"),
+      t("bookings.confirmDelete.message", "Are you sure you want to delete this booking?"),
+      t("common.delete", "Delete"),
+      "btn-danger",
+      (done) => {
+        window.api.deleteBooking(booking.Id)
+          .then(() => {
+            done();
+            coreui.Modal.getInstance(this.querySelector("#viewBookingModal"))?.hide();
+            this.#reload();
+          })
+          .catch((error) => {
+            done();
+            alert(`Error: ${error.message}`);
+          });
+      },
+    );
+  }
+
+  async #submitViewEdit() {
+    const bookingId = this._viewBooking.Id;
+    const rentalId = this.querySelector("#viewBookingRental")?.value ?? "";
+    const customerId = this.querySelector("#viewBookingCustomer")?.value ?? "";
+    const arrival = this.querySelector("#viewBookingArrival")?.value ?? "";
+    const departure = this.querySelector("#viewBookingDeparture")?.value ?? "";
+    const amount = parseFloat(this.querySelector("#viewBookingAmount")?.value);
+    const notes = (this.querySelector("#viewBookingNotes")?.value ?? "").trim();
+    const offRecord = this.querySelector("#viewBookingOffRecord")?.checked ?? false;
+    const errors = this.#validateBooking(rentalId, customerId, arrival, departure, amount);
+    if (errors.length) {
+      this._viewErrors = errors;
+      return;
+    }
+    this._viewErrors = [];
+    const saveBtn = this.querySelector("#viewBookingSaveBtn");
+    const lb = coreui.LoadingButton.getInstance(saveBtn) ?? new coreui.LoadingButton(saveBtn, { disabledOnLoading: true });
+    this._viewSaving = true;
+    lb.start();
+    try {
+      await window.api.updateBooking(bookingId, {
+        RentalId: rentalId,
+        CustomerId: customerId,
+        ArrivalDate: arrival,
+        DepartureDate: departure,
+        AmountEuros: amount,
+        Notes: notes,
+        OffRecord: offRecord,
+      });
+      await this.#reload();
+      this._viewBooking = state.allBookings.find((b) => b.Id === bookingId) ?? this._viewBooking;
+      this._viewMode = "view";
+      this._viewErrors = [];
+      this.updateComplete.then(() => this.#populateFields());
+    } catch (error) {
+      this._viewErrors = [error.message];
+    } finally {
+      lb.stop();
+      this._viewSaving = false;
+    }
+  }
+
+  // --- add modal ---
+
   #openAddModal() {
     const rentalEl = this.querySelector("#addBookingRental");
     rentalEl.rentals = state.allRentals;
@@ -144,60 +266,25 @@ class BookingsTab extends LitElement {
     customerEl.customers = state.allCustomers;
     customerEl.selectedId = null;
     ["addBookingArrival", "addBookingDeparture", "addBookingDuration", "addBookingAmount", "addBookingNotes"].forEach(
-      (fieldId) => {
-        this.querySelector(`#${fieldId}`).value = "";
-      },
+      (fieldId) => { this.querySelector(`#${fieldId}`).value = ""; },
     );
     this.querySelector("#addBookingOffRecord").checked = false;
     this._addErrors = [];
     coreui.Modal.getOrCreateInstance(this.querySelector("#addBookingModal")).show();
   }
 
-  #openEditModal(booking) {
-    this.querySelector("#editBookingId").value = booking.Id;
-    this.querySelector("#editBookingArrival").value = booking.ArrivalDate;
-    this.querySelector("#editBookingDeparture").value = booking.DepartureDate;
-    this.querySelector("#editBookingAmount").value = booking.AmountEuros;
-    this.querySelector("#editBookingNotes").value = booking.Notes || "";
-    this.querySelector("#editBookingOffRecord").checked = !!booking.OffRecord;
-    this.querySelector("#editBookingDuration").value =
-      `${booking.DurationDays} day${booking.DurationDays !== 1 ? "s" : ""}`;
-    const rentalEl = this.querySelector("#editBookingRental");
-    rentalEl.rentals = state.allRentals;
-    rentalEl.selectedId = booking.RentalId;
-    const customerEl = this.querySelector("#editBookingCustomer");
-    customerEl.customers = state.allCustomers;
-    customerEl.selectedId = booking.CustomerId;
-    this._editErrors = [];
-    coreui.Modal.getOrCreateInstance(this.querySelector("#editBookingModal")).show();
-  }
-
   #validateBooking(rentalId, customerId, arrival, departure, amount) {
     const errors = [];
-    if (!rentalId) {
-      errors.push(t("bookings.error.rentalRequired", "Please select a rental."));
-    }
-
-    if (!customerId) {
-      errors.push(t("bookings.error.customerRequired", "Please select a customer."));
-    }
-
-    if (!arrival) {
-      errors.push(t("bookings.error.arrivalRequired", "Please select an arrival date."));
-    }
-
-    if (!departure) {
-      errors.push(t("bookings.error.departureRequired", "Please select a departure date."));
-    }
-
+    if (!rentalId) errors.push(t("bookings.error.rentalRequired", "Please select a rental."));
+    if (!customerId) errors.push(t("bookings.error.customerRequired", "Please select a customer."));
+    if (!arrival) errors.push(t("bookings.error.arrivalRequired", "Please select an arrival date."));
+    if (!departure) errors.push(t("bookings.error.departureRequired", "Please select a departure date."));
     if (arrival && departure && arrival >= departure) {
       errors.push(t("bookings.error.departureAfterArrival", "Departure must be after arrival."));
     }
-
     if (isNaN(amount) || amount <= 0) {
       errors.push(t("bookings.error.amountPositive", "Amount must be greater than 0."));
     }
-
     return errors;
   }
 
@@ -241,149 +328,130 @@ class BookingsTab extends LitElement {
     }
   }
 
-  async #submitEdit() {
-    const bookingId = this.querySelector("#editBookingId").value;
-    const rentalId = this.querySelector("#editBookingRental").value;
-    const customerId = this.querySelector("#editBookingCustomer").value;
-    const arrival = this.querySelector("#editBookingArrival").value;
-    const departure = this.querySelector("#editBookingDeparture").value;
-    const amount = parseFloat(this.querySelector("#editBookingAmount").value);
-    const notes = this.querySelector("#editBookingNotes").value.trim();
-    const offRecord = this.querySelector("#editBookingOffRecord").checked;
-    const errors = this.#validateBooking(rentalId, customerId, arrival, departure, amount);
-    if (errors.length) {
-      this._editErrors = errors;
-      return;
-    }
-
-    this._editErrors = [];
-    const editBtn = this.querySelector("#editBookingSaveBtn");
-    const editLb = coreui.LoadingButton.getInstance(editBtn) ?? new coreui.LoadingButton(editBtn, { disabledOnLoading: true });
-    this._editSaving = true;
-    editLb.start();
-    try {
-      await window.api.updateBooking(bookingId, {
-        RentalId: rentalId,
-        CustomerId: customerId,
-        ArrivalDate: arrival,
-        DepartureDate: departure,
-        AmountEuros: amount,
-        Notes: notes,
-        OffRecord: offRecord,
-      });
-      editLb.stop();
-      this._editSaving = false;
-      coreui.Modal.getInstance(this.querySelector("#editBookingModal")).hide();
-      await this.#reload();
-    } catch (error) {
-      editLb.stop();
-      this._editSaving = false;
-      this._editErrors = [error.message];
-    }
-  }
-
-  #confirmDelete(bookingId) {
-    showConfirm(
-      t("bookings.confirmDelete.title", "Delete Booking"),
-      t("bookings.confirmDelete.message", "Are you sure you want to delete this booking?"),
-      t("common.delete", "Delete"),
-      "btn-danger",
-      (done) => {
-        window.api
-          .deleteBooking(bookingId)
-          .then(() => {
-            done();
-            this.#reload();
-          })
-          .catch((error) => {
-            done();
-            alert(`Error: ${error.message}`);
-          });
-      },
-    );
-  }
+  // --- rendering ---
 
   #renderErrors(errors) {
-    if (!errors.length) {
-      return "";
-    }
-
+    if (!errors.length) return "";
     return html`
       <div class="alert alert-danger py-2 mb-2">
-        ${errors.map(
-          (errorMessage) => html`<div><i class="bi bi-exclamation-circle me-1"></i>${errorMessage}</div>`,
-        )}
+        ${errors.map((errorMessage) => html`<div><i class="bi bi-exclamation-circle me-1"></i>${errorMessage}</div>`)}
       </div>
     `;
   }
 
-
-  #renderList() {
-    const bookings = this._filteredBookings;
-    if (!bookings.length) {
-      return html`<p class="text-muted p-3">${t("bookings.empty", "No bookings found.")}</p>`;
-    }
-
-    const totalDays = bookings.reduce((sum, b) => sum + (parseInt(b.DurationDays) || 0), 0);
-    const totalAmount = bookings.reduce((sum, b) => sum + (parseFloat(b.AmountEuros) || 0), 0);
+  #renderViewModal() {
+    const b = this._viewBooking;
+    const isEdit = this._viewMode === "edit";
 
     return html`
-      <div class="table-responsive rm-table-scroll">
-        <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
-          <thead class="table-success">
-            <tr>
-              <th>${t("bookings.table.rental", "Rental")}</th>
-              <th class="text-center">${t("bookings.table.customer", "Customer")}</th>
-              <th class="text-center">${t("bookings.table.arrival", "Arrival")}</th>
-              <th class="text-center">${t("bookings.table.departure", "Departure")}</th>
-              <th class="text-center">${t("bookings.table.days", "Days")}</th>
-              <th class="text-center">${t("bookings.table.amount", "Amount")}</th>
-              <th class="text-center">${t("bookings.table.offRecord", "Off Record")}</th>
-              <th class="text-center"></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${bookings.map((booking) => {
-              const customer = booking.customer || {};
-              const rental = booking.rental || {};
-              return html`
-                <tr>
-                  <td class="fw-semibold">${rental.Name || booking.RentalId}</td>
-                  <td class="text-center">${customer.FullName || booking.CustomerId}</td>
-                  <td class="text-center">${formatDate(booking.ArrivalDate)}</td>
-                  <td class="text-center">${formatDate(booking.DepartureDate)}</td>
-                  <td class="text-center">${booking.DurationDays}</td>
-                  <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
-                  <td class="text-center">
-                    ${booking.OffRecord ? html`<span class="badge bg-dark">${t("bookings.table.offRecord.short", "Off")}</span>` : ""}
-                  </td>
-                  <td class="text-center">
-                    <div class="d-flex gap-1 justify-content-center">
-                      <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(booking)}>
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-danger" @click=${() => this.#confirmDelete(booking.Id)}>
-                        <i class="bi bi-trash"></i>
-                      </button>
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="viewBookingModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-calendar-event me-2"></i>${b?.rental?.Name ?? ""}</h5>
+              <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              ${isEdit ? html`
+                <rental-select id="viewBookingRental"
+                  .invalid=${this._viewErrors.some(e => e.includes(t("bookings.error.rentalRequired", "Please select a rental.")))}
+                ></rental-select>
+                <customer-select id="viewBookingCustomer"
+                  .invalid=${this._viewErrors.some(e => e.includes(t("bookings.error.customerRequired", "Please select a customer.")))}
+                ></customer-select>
+              ` : html`
+                <div class="form-floating mb-3">
+                  <input type="text" id="viewBookingRental" class="form-control" readonly
+                    placeholder=${t("common.field.rental", "Rental")} />
+                  <label><i class="bi bi-house-door me-1"></i>${t("common.field.rental", "Rental")}</label>
+                </div>
+                <div class="form-floating mb-3">
+                  <input type="text" id="viewBookingCustomer" class="form-control" readonly
+                    placeholder=${t("common.field.customer", "Customer")} />
+                  <label><i class="bi bi-person me-1"></i>${t("common.field.customer", "Customer")}</label>
+                </div>
+              `}
+              <div class="row mb-3">
+                <div class="col">
+                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
+                  ${isEdit ? html`
+                    <date-picker-input id="viewBookingArrival"
+                      @change=${() => updateDurationField("viewBookingArrival", "viewBookingDeparture", "viewBookingDuration")}>
+                    </date-picker-input>
+                  ` : html`
+                    <div class="form-floating">
+                      <input type="text" id="viewBookingArrival" class="form-control" readonly
+                        placeholder=${t("bookings.field.arrival", "Arrival")} />
+                      <label>${t("bookings.field.arrival", "Arrival")}</label>
                     </div>
-                  </td>
-                </tr>
-              `;
-            })}
-          </tbody>
-          <tfoot class="fw-bold">
-            <tr>
-              <td>${t("common.total", "Total")} (${bookings.length})</td>
-              <td class="text-center"></td>
-              <td class="text-center"></td>
-              <td class="text-center"></td>
-              <td class="text-center">${totalDays}</td>
-              <td class="text-center">${totalAmount.toFixed(2)}€</td>
-              <td class="text-center"></td>
-              <td class="text-center"></td>
-            </tr>
-          </tfoot>
-        </table>
+                  `}
+                </div>
+                <div class="col">
+                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
+                  ${isEdit ? html`
+                    <date-picker-input id="viewBookingDeparture"
+                      @change=${() => updateDurationField("viewBookingArrival", "viewBookingDeparture", "viewBookingDuration")}>
+                    </date-picker-input>
+                  ` : html`
+                    <div class="form-floating">
+                      <input type="text" id="viewBookingDeparture" class="form-control" readonly
+                        placeholder=${t("bookings.field.departure", "Departure")} />
+                      <label>${t("bookings.field.departure", "Departure")}</label>
+                    </div>
+                  `}
+                </div>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="viewBookingDuration" class="form-control" readonly
+                  placeholder=${t("bookings.field.duration", "Duration")} />
+                <label><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="viewBookingAmount" class="form-control" placeholder="0.00"
+                  inputmode="decimal" ?readonly=${!isEdit}
+                  @input=${(e) => { const v = e.target.value.replace(",", "."); if (v !== e.target.value) e.target.value = v; }} />
+                <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
+              </div>
+              ${isEdit ? html`
+                <input-autocomplete
+                  id="viewBookingNotes"
+                  class="mb-3"
+                  label=${t("bookings.field.notes", "Notes")}
+                  placeholder=${t("bookings.field.notes", "Notes")}
+                  .suggestions=${uniqueNotes(state.allBookings)}
+                ></input-autocomplete>
+              ` : html`
+                <div class="form-floating mb-3">
+                  <input type="text" id="viewBookingNotes" class="form-control" readonly
+                    placeholder=${t("bookings.field.notes", "Notes")} />
+                  <label>${t("bookings.field.notes", "Notes")}</label>
+                </div>
+              `}
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch"
+                  id="viewBookingOffRecord" ?disabled=${!isEdit} />
+                <label class="form-check-label" for="viewBookingOffRecord">
+                  <i class="bi bi-eye-slash me-1"></i>${t("bookings.field.offRecord", "Off record")}
+                </label>
+              </div>
+              ${isEdit ? this.#renderErrors(this._viewErrors) : ""}
+            </div>
+            <div class="modal-footer">
+              ${isEdit ? html`
+                <button class="btn btn-secondary" @click=${this.#cancelEdit}
+                  ?disabled=${this._viewSaving}>${t("common.cancel", "Cancel")}</button>
+                <button class="btn btn-success" id="viewBookingSaveBtn" @click=${this.#submitViewEdit}>
+                  <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
+                </button>
+              ` : html`
+                <button class="btn btn-danger" @click=${this.#handleDelete}
+                  ?disabled=${this._viewSaving}>${t("common.delete", "Delete")}</button>
+                <button class="btn btn-primary ms-auto" @click=${this.#enterEditMode}
+                  ?disabled=${this._viewSaving}>${t("common.edit", "Edit")}</button>
+              `}
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -395,6 +463,7 @@ class BookingsTab extends LitElement {
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>${t("bookings.modal.add.title", "Add Booking")}</h5>
+              <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <rental-select id="addBookingRental"
@@ -424,7 +493,8 @@ class BookingsTab extends LitElement {
                 <label><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
               </div>
               <div class="form-floating mb-3">
-                <input type="number" id="addBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
+                <input type="text" id="addBookingAmount" class="form-control" placeholder="0.00" inputmode="decimal"
+                  @input=${(e) => { const v = e.target.value.replace(",", "."); if (v !== e.target.value) e.target.value = v; }} />
                 <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
               </div>
               <input-autocomplete
@@ -455,64 +525,60 @@ class BookingsTab extends LitElement {
     `;
   }
 
-  #renderEditModal() {
+  #renderList() {
+    const bookings = this._filteredBookings;
+    if (!bookings.length) {
+      return html`<p class="text-muted p-3">${t("bookings.empty", "No bookings found.")}</p>`;
+    }
+
+    const totalDays = bookings.reduce((sum, b) => sum + (parseInt(b.DurationDays) || 0), 0);
+    const totalAmount = bookings.reduce((sum, b) => sum + (parseFloat(b.AmountEuros) || 0), 0);
+
     return html`
-      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="editBookingModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>${t("bookings.modal.edit.title", "Edit Booking")}</h5>
-            </div>
-            <div class="modal-body">
-              <input type="hidden" id="editBookingId" />
-              <rental-select id="editBookingRental"></rental-select>
-              <customer-select id="editBookingCustomer"></customer-select>
-              <div class="row mb-3">
-                <div class="col">
-                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-in-right me-1"></i>${t("bookings.field.arrival", "Arrival")}</label>
-                  <date-picker-input id="editBookingArrival"
-                    @change=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")}>
-                  </date-picker-input>
-                </div>
-                <div class="col">
-                  <label class="form-label small fw-semibold"><i class="bi bi-box-arrow-right me-1"></i>${t("bookings.field.departure", "Departure")}</label>
-                  <date-picker-input id="editBookingDeparture"
-                    @change=${() => updateDurationField("editBookingArrival", "editBookingDeparture", "editBookingDuration")}>
-                  </date-picker-input>
-                </div>
-              </div>
-              <div class="form-floating mb-3">
-                <input type="text" id="editBookingDuration" class="form-control" placeholder=${t("bookings.field.duration", "Duration")} readonly />
-                <label><i class="bi bi-moon-stars me-1"></i>${t("bookings.field.duration", "Duration")}</label>
-              </div>
-              <div class="form-floating mb-3">
-                <input type="number" id="editBookingAmount" class="form-control" step="0.01" min="0.01" placeholder="0.00" />
-                <label><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
-              </div>
-              <input-autocomplete
-                id="editBookingNotes"
-                class="mb-3"
-                label=${t("bookings.field.notes", "Notes")}
-                placeholder=${t("bookings.field.notes", "Notes")}
-                .suggestions=${uniqueNotes(state.allBookings)}
-              ></input-autocomplete>
-              <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" role="switch" id="editBookingOffRecord" />
-                <label class="form-check-label" for="editBookingOffRecord">
-                  <i class="bi bi-eye-slash me-1"></i>${t("bookings.field.offRecord", "Off record")}
-                </label>
-              </div>
-              ${this.#renderErrors(this._editErrors)}
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" id="editBookingCancelBtn" data-coreui-dismiss="modal"
-                ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" id="editBookingSaveBtn" @click=${this.#submitEdit}>
-                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
-              </button>
-            </div>
-          </div>
-        </div>
+      <div class="table-responsive rm-table-scroll">
+        <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+          <thead class="table-success">
+            <tr>
+              <th>${t("bookings.table.rental", "Rental")}</th>
+              <th class="text-center">${t("bookings.table.customer", "Customer")}</th>
+              <th class="text-center">${t("bookings.table.arrival", "Arrival")}</th>
+              <th class="text-center">${t("bookings.table.departure", "Departure")}</th>
+              <th class="text-center">${t("bookings.table.days", "Days")}</th>
+              <th class="text-center">${t("bookings.table.amount", "Amount")}</th>
+              <th class="text-center">${t("bookings.table.offRecord", "Off Record")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bookings.map((booking) => {
+              const customer = booking.customer || {};
+              const rental = booking.rental || {};
+              return html`
+                <tr style="cursor:pointer" @click=${() => this.#openViewModal(booking)}>
+                  <td class="fw-semibold">${rental.Name || booking.RentalId}</td>
+                  <td class="text-center">${customer.FullName || booking.CustomerId}</td>
+                  <td class="text-center">${formatDate(booking.ArrivalDate)}</td>
+                  <td class="text-center">${formatDate(booking.DepartureDate)}</td>
+                  <td class="text-center">${booking.DurationDays}</td>
+                  <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
+                  <td class="text-center">
+                    ${booking.OffRecord ? html`<span class="badge bg-dark">${t("bookings.table.offRecord.short", "Off")}</span>` : ""}
+                  </td>
+                </tr>
+              `;
+            })}
+          </tbody>
+          <tfoot class="fw-bold">
+            <tr>
+              <td>${t("common.total", "Total")} (${bookings.length})</td>
+              <td class="text-center"></td>
+              <td class="text-center"></td>
+              <td class="text-center"></td>
+              <td class="text-center">${totalDays}</td>
+              <td class="text-center">${totalAmount.toFixed(2)}€</td>
+              <td class="text-center"></td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     `;
   }
@@ -560,7 +626,7 @@ class BookingsTab extends LitElement {
         ${this.#renderList()}
       </div>
       ${this.#renderAddModal()}
-      ${this.#renderEditModal()}
+      ${this.#renderViewModal()}
     `;
   }
 }

@@ -7,6 +7,8 @@ import { subscribeLanguage, getLanguage, t } from "../translations.js";
 class ExportTab extends LitElement {
   static properties = {
     _filteredBookings: { state: true },
+    _includeOffRecord: { state: true },
+    _includeExpenses: { state: true },
   };
 
   #fromDate = "";
@@ -17,6 +19,8 @@ class ExportTab extends LitElement {
   constructor() {
     super();
     this._filteredBookings = [];
+    this._includeOffRecord = false;
+    this._includeExpenses = false;
   }
 
   createRenderRoot() {
@@ -27,8 +31,17 @@ class ExportTab extends LitElement {
     super.connectedCallback();
     this._unsubLang = subscribeLanguage(() => {
       this.requestUpdate();
-      this.#dateRangePicker?.update({ locale: getLanguage() });
+      this.#dateRangePicker?.update(this.#rangePickerFormatOptions());
     });
+  }
+
+  #rangePickerFormatOptions() {
+    const lang = getLanguage();
+    return {
+      locale: lang,
+      inputDateFormat: (date) =>
+        new Intl.DateTimeFormat(lang, { month: "long", year: "numeric" }).format(date),
+    };
   }
 
   disconnectedCallback() {
@@ -53,11 +66,11 @@ class ExportTab extends LitElement {
       selectionType: "month",
       placeholder: [t("export.field.from", "From"), t("export.field.to", "To")],
       inputReadOnly: true,
-      locale: getLanguage(),
       previewDateOnHover: false,
       cleaner: false,
       footer: true,
       size: "sm",
+      ...this.#rangePickerFormatOptions(),
     });
 
     el.addEventListener("startDateChange.coreui.date-range-picker", (e) => {
@@ -94,6 +107,8 @@ class ExportTab extends LitElement {
     this.#fromDate = `${currentYear}-01-01`;
     this.#toDate = `${currentYear}-12-31`;
     this.#selectedRentalIds = [];
+    this._includeOffRecord = false;
+    this._includeExpenses = false;
     state.exportBookings = state.allBookings;
 
     const el = this.querySelector("#exportDateRange");
@@ -104,6 +119,7 @@ class ExportTab extends LitElement {
     this.#dateRangePicker?.update({
       startDate: `${currentYear}-01`,
       endDate: `${currentYear}-12`,
+      ...this.#rangePickerFormatOptions(),
     });
 
     this.#applyFilters();
@@ -115,7 +131,7 @@ class ExportTab extends LitElement {
   #applyFilters() {
     const selectedRentalIds = this.#selectedRentalIds;
     this._filteredBookings = state.exportBookings.filter((booking) => {
-      if (booking.OffRecord) return false;
+      if (!this._includeOffRecord && booking.OffRecord) return false;
       if (selectedRentalIds !== null && !selectedRentalIds.includes(booking.RentalId)) return false;
       if (this.#fromDate && booking.ArrivalDate < this.#fromDate) return false;
       if (this.#toDate && booking.ArrivalDate > this.#toDate) return false;
@@ -171,6 +187,45 @@ class ExportTab extends LitElement {
       row.eachCell((cell) => {
         cell.alignment = { horizontal: "center", vertical: "middle" };
       });
+    }
+
+    if (this._includeExpenses) {
+      const expenseSheet = workbook.addWorksheet(t("export.sheet.expenses", "Expenses"));
+      expenseSheet.views = [{ state: "frozen", ySplit: 1 }];
+      expenseSheet.columns = [
+        { header: t("expenses.field.name", "Name"), width: 30 },
+        { header: t("export.table.rental", "Rental"), width: 24 },
+        { header: t("expenses.field.amount", "Amount (€)"), width: 12 },
+        { header: t("expenses.field.date", "Date"), width: 14 },
+        { header: t("expenses.field.notes", "Notes"), width: 30 },
+      ];
+      expenseSheet.getRow(1).eachCell((cell) => {
+        cell.fill = headerStyle.fill;
+        cell.font = headerStyle.font;
+        cell.alignment = headerStyle.alignment;
+      });
+
+      const selectedRentalIds = this.#selectedRentalIds;
+      const filteredExpenses = state.allExpenses.filter((expense) => {
+        if (selectedRentalIds !== null && !expense.RentalIds.some((id) => selectedRentalIds.includes(id))) return false;
+        if (this.#fromDate && expense.DateCreated < this.#fromDate) return false;
+        if (this.#toDate && expense.DateCreated > this.#toDate) return false;
+        return true;
+      });
+
+      for (const expense of filteredExpenses) {
+        const rentalNames = (expense.rentals || []).map((r) => r.Name).join(", ") || "-";
+        const row = expenseSheet.addRow([
+          expense.Name || "-",
+          rentalNames,
+          parseFloat(expense.AmountEuros) || 0,
+          expense.DateCreated || "-",
+          expense.Notes || "",
+        ]);
+        row.eachCell((cell) => {
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        });
+      }
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -247,6 +302,32 @@ class ExportTab extends LitElement {
           .defaultNone=${true}
           @change=${(e) => this.#onRentalChange(e)}
         ></rental-filter-dropdown></div>
+        <div class="form-check form-switch mb-0">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            id="exportIncludeOffRecord"
+            .checked=${this._includeOffRecord}
+            @change=${(e) => { this._includeOffRecord = e.target.checked; this.#applyFilters(); }}
+          />
+          <label class="form-check-label small text-nowrap" for="exportIncludeOffRecord">
+            ${t("export.filter.includeOffRecord", "Include off record")}
+          </label>
+        </div>
+        <div class="form-check form-switch mb-0">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            id="exportIncludeExpenses"
+            .checked=${this._includeExpenses}
+            @change=${(e) => { this._includeExpenses = e.target.checked; }}
+          />
+          <label class="form-check-label small text-nowrap" for="exportIncludeExpenses">
+            ${t("export.filter.includeExpenses", "Include expenses")}
+          </label>
+        </div>
       `)}
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">

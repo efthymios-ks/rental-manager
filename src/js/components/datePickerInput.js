@@ -1,10 +1,16 @@
 import { LitElement, html } from "../../lib/lit.min.js";
-import { getLanguage } from "../translations.js";
+import { getLanguage, subscribeLanguage, t } from "../translations.js";
 
 const toDisplayDate = (date) => {
   const d = String(date.getDate()).padStart(2, "0");
   const m = String(date.getMonth() + 1).padStart(2, "0");
   return `${d}/${m}/${date.getFullYear()}`;
+};
+
+const fromDisplayDate = (str) => {
+  const [d, m, y] = String(str).split("/").map(Number);
+  if (!d || !m || !y) return null;
+  return new Date(y, m - 1, d);
 };
 
 class DatePickerInput extends LitElement {
@@ -15,10 +21,24 @@ class DatePickerInput extends LitElement {
     return this.#value;
   }
 
+  #dateOrNull() {
+    return this.#value ? new Date(this.#value + "T00:00:00") : null;
+  }
+
+  #formatOptions() {
+    return {
+      date: this.#dateOrNull(),
+      inputDateFormat: toDisplayDate,
+      inputDateParse: fromDisplayDate,
+      locale: getLanguage(),
+      placeholder: t("common.selectDate", "Select date"),
+    };
+  }
+
   set value(v) {
     this.#value = v || "";
     if (this.#picker) {
-      this.#picker.update({ date: this.#value ? new Date(this.#value + "T00:00:00") : null });
+      this.#picker.update(this.#formatOptions());
     }
   }
 
@@ -30,11 +50,9 @@ class DatePickerInput extends LitElement {
     const el = this.querySelector("div");
     el.setAttribute("data-coreui-input-read-only", "true");
     this.#picker = new coreui.DatePicker(el, {
-      date: this.#value ? new Date(this.#value + "T00:00:00") : null,
-      inputDateFormat: toDisplayDate,
+      ...this.#formatOptions(),
       inputReadOnly: true,
       previewDateOnHover: false,
-      locale: getLanguage(),
       cleaner: false,
       container: "body",
     });
@@ -54,8 +72,16 @@ class DatePickerInput extends LitElement {
     });
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubLang = subscribeLanguage(() => {
+      this.#picker?.update(this.#formatOptions());
+    });
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._unsubLang?.();
     this.#picker?.dispose();
     this.#picker = null;
   }

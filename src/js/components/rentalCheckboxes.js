@@ -32,8 +32,9 @@ class RentalCheckboxes extends LitElement {
 
   willUpdate(changedProperties) {
     if (changedProperties.has("rentals") || changedProperties.has("initialIds")) {
-      const allSelected = !this.initialIds || this.initialIds.length === 0;
-      this._checkedIds = allSelected ? this.rentals.map((rental) => rental.Id) : [...this.initialIds];
+      this._checkedIds = this.initialIds === null
+        ? this.rentals.map((rental) => rental.Id)
+        : [...this.initialIds];
     }
   }
 

@@ -58,9 +58,14 @@
       "common.saving": "Saving…",
       "common.cancel": "Cancel",
       "common.delete": "Delete",
+      "common.edit": "Edit",
+      "common.close": "Close",
       "common.total": "Total",
       "common.field.rental": "Rental",
       "common.field.customer": "Customer",
+      "common.selectDate": "Select date",
+      "common.day": "day",
+      "common.days": "days",
 
       "bookings.title": "Bookings",
       "bookings.empty": "No bookings found.",
@@ -107,6 +112,7 @@
       "expenses.confirmDelete.title": "Delete Expense",
       "expenses.confirmDelete.message": "Are you sure you want to delete this expense?",
       "expenses.error.nameRequired": "Please enter a name.",
+      "expenses.error.rentalRequired": "Please select at least one rental.",
       "expenses.error.dateRequired": "Please select a date.",
       "expenses.error.amountPositive": "Amount must be greater than 0.",
 
@@ -136,6 +142,7 @@
       "customers.confirmDelete.title": "Delete Customer",
       "customers.confirmDelete.message": "Are you sure you want to delete this customer?",
       "customers.error.fullNameRequired": "Full name is required.",
+      "customers.error.cannotDelete": "Can't delete: customer has bookings.",
 
       "rentals.title": "Rentals",
       "rentals.empty": "No rentals yet.",
@@ -158,6 +165,7 @@
       "rentals.confirmDelete.title": "Delete Rental",
       "rentals.confirmDelete.message": "Are you sure you want to delete this rental?",
       "rentals.error.nameRequired": "Name is required.",
+      "rentals.error.cannotDelete": "Can't delete: rental has bookings or expenses.",
 
       "export.title": "Export",
       "export.empty": "No bookings for this range.",
@@ -170,7 +178,10 @@
       "export.table.income": "Income",
       "export.table.arrival": "Arrival",
       "export.table.departure": "Departure",
-      "export.table.days": "Days"
+      "export.table.days": "Days",
+      "export.filter.includeOffRecord": "Include off record",
+      "export.filter.includeExpenses": "Include expenses",
+      "export.sheet.expenses": "Expenses"
     }
   },
   "el": {
@@ -232,13 +243,18 @@
       "common.saving": "Αποθήκευση…",
       "common.cancel": "Ακύρωση",
       "common.delete": "Διαγραφή",
+      "common.edit": "Επεξεργασία",
+      "common.close": "Κλείσιμο",
       "common.total": "Σύνολο",
       "common.field.rental": "Κατοικία",
       "common.field.customer": "Πελάτης",
+      "common.selectDate": "Επιλογή ημερομηνίας",
+      "common.day": "μέρα",
+      "common.days": "μέρες",
 
       "bookings.title": "Κρατήσεις",
       "bookings.empty": "Δεν βρέθηκαν κρατήσεις.",
-      "bookings.filter.search.placeholder": "Αναζήτηση πελάτη...",
+      "bookings.filter.search.placeholder": "Αναζήτηση πελάτη…",
       "bookings.filter.offRecord": "Μόνο Μαύρα",
       "bookings.table.rental": "Κατοικία",
       "bookings.table.customer": "Πελάτης",
@@ -281,6 +297,7 @@
       "expenses.confirmDelete.title": "Διαγραφή Εξόδου",
       "expenses.confirmDelete.message": "Είστε βέβαιοι ότι θέλετε να διαγράψετε το έξοδο;",
       "expenses.error.nameRequired": "Παρακαλώ εισάγετε όνομα.",
+      "expenses.error.rentalRequired": "Παρακαλώ επιλέξτε τουλάχιστον μία κατοικία.",
       "expenses.error.dateRequired": "Παρακαλώ επιλέξτε ημερομηνία.",
       "expenses.error.amountPositive": "Το ποσό πρέπει να είναι μεγαλύτερο από 0.",
 
@@ -310,6 +327,7 @@
       "customers.confirmDelete.title": "Διαγραφή Πελάτη",
       "customers.confirmDelete.message": "Είστε βέβαιοι ότι θέλετε να διαγράψετε τον πελάτη;",
       "customers.error.fullNameRequired": "Το ονοματεπώνυμο είναι υποχρεωτικό.",
+      "customers.error.cannotDelete": "Δεν είναι δυνατή η διαγραφή: ο πελάτης έχει κρατήσεις.",
 
       "rentals.title": "Κατοικίες",
       "rentals.empty": "Δεν υπάρχουν κατοικίες.",
@@ -332,6 +350,7 @@
       "rentals.confirmDelete.title": "Διαγραφή Κατοικίας",
       "rentals.confirmDelete.message": "Είστε βέβαιοι ότι θέλετε να διαγράψετε την κατοικία;",
       "rentals.error.nameRequired": "Το όνομα είναι υποχρεωτικό.",
+      "rentals.error.cannotDelete": "Δεν είναι δυνατή η διαγραφή: η κατοικία έχει κρατήσεις ή έξοδα.",
 
       "export.title": "Εξαγωγή",
       "export.empty": "Δεν βρέθηκαν κρατήσεις για αυτή την περίοδο.",
@@ -344,7 +363,10 @@
       "export.table.income": "Έσοδα",
       "export.table.arrival": "Άφιξη",
       "export.table.departure": "Αναχώρηση",
-      "export.table.days": "Μέρες"
+      "export.table.days": "Μέρες",
+      "export.filter.includeOffRecord": "Συμπερίληψη Μαύρων",
+      "export.filter.includeExpenses": "Συμπερίληψη Εξόδων",
+      "export.sheet.expenses": "Έξοδα"
     }
   }
 }

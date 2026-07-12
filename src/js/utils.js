@@ -1,3 +1,4 @@
+import { t } from "./translations.js";
 
 export function todayStr() {
   const d = new Date();
@@ -67,7 +68,7 @@ export function updateDurationField(arrivalFieldId, departureFieldId, durationFi
       (new Date(departureValue) - new Date(arrivalValue)) / 86400000,
     );
     document.getElementById(durationFieldId).value =
-      dayDifference > 0 ? `${dayDifference} day${dayDifference !== 1 ? "s" : ""}` : "—";
+      dayDifference > 0 ? `${dayDifference} ${dayDifference !== 1 ? t("common.days", "days") : t("common.day", "day")}` : "—";
   } else {
     document.getElementById(durationFieldId).value = "";
   }

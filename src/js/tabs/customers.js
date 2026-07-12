@@ -20,11 +20,13 @@ class CustomersTab extends LitElement {
   static properties = {
     _filteredCustomers: { state: true },
     _addErrors: { state: true },
-    _editErrors: { state: true },
     _addSaving: { state: true },
-    _editSaving: { state: true },
     _addRating: { state: true },
-    _editRating: { state: true },
+    _viewCustomer: { state: true },
+    _viewMode: { state: true },
+    _viewRating: { state: true },
+    _viewErrors: { state: true },
+    _viewSaving: { state: true },
   };
 
   #searchQuery = "";
@@ -37,11 +39,13 @@ class CustomersTab extends LitElement {
     super();
     this._filteredCustomers = [];
     this._addErrors = [];
-    this._editErrors = [];
     this._addSaving = false;
-    this._editSaving = false;
     this._addRating = 0;
-    this._editRating = 0;
+    this._viewCustomer = null;
+    this._viewMode = "view";
+    this._viewRating = 0;
+    this._viewErrors = [];
+    this._viewSaving = false;
   }
 
   createRenderRoot() {
@@ -82,37 +86,16 @@ class CustomersTab extends LitElement {
     const selectedYears = this.#filterYears?.length ? this.#filterYears : null;
     const selectedRentalIds = this.#filterRentalIds?.length ? this.#filterRentalIds : null;
     this._filteredCustomers = state.allCustomers.filter((customer) => {
-      if (this.#vatIgnoredOnly && customer.VatOrPassport) {
-        return false;
-      }
+      if (this.#vatIgnoredOnly && customer.VatOrPassport) return false;
 
       if (selectedYears !== null || selectedRentalIds !== null) {
-        const customerBookings = state.allBookings.filter(
-          (booking) => booking.CustomerId === customer.Id,
-        );
+        const customerBookings = state.allBookings.filter((b) => b.CustomerId === customer.Id);
         if (!customerBookings.length) return true;
-
-        if (
-          selectedYears !== null &&
-          !customerBookings.some((booking) =>
-            selectedYears.includes(booking.ArrivalDate.substring(0, 4)),
-          )
-        ) {
-          return false;
-        }
-
-        if (
-          selectedRentalIds !== null &&
-          !customerBookings.some((booking) => selectedRentalIds.includes(booking.RentalId))
-        ) {
-          return false;
-        }
+        if (selectedYears !== null && !customerBookings.some((b) => selectedYears.includes(b.ArrivalDate.substring(0, 4)))) return false;
+        if (selectedRentalIds !== null && !customerBookings.some((b) => selectedRentalIds.includes(b.RentalId))) return false;
       }
 
-      if (!this.#searchQuery) {
-        return true;
-      }
-
+      if (!this.#searchQuery) return true;
       return (
         normalizeSearch(customer.FullName).includes(this.#searchQuery) ||
         normalizeSearch(customer.PhoneNumber).includes(this.#searchQuery) ||
@@ -141,20 +124,145 @@ class CustomersTab extends LitElement {
     this.#applyFilters();
   }
 
-  #copyPhone(phone) {
-    navigator.clipboard.writeText(phone).catch(() => {
-      const textArea = document.createElement("textarea");
-      textArea.value = phone;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
+  // --- view/edit modal ---
+
+  #openViewModal(customer) {
+    this._viewCustomer = customer;
+    this._viewMode = "view";
+    this._viewErrors = [];
+    this._viewSaving = false;
+    this.updateComplete.then(() => {
+      this.#populateFields();
+      coreui.Modal.getOrCreateInstance(this.querySelector("#viewCustomerModal")).show();
     });
   }
+
+  #populateFields() {
+    const c = this._viewCustomer;
+    if (!c) return;
+    const set = (id, val) => { const el = this.querySelector(`#${id}`); if (el) el.value = val ?? ""; };
+    set("viewCustomerFullName", c.FullName);
+    set("viewCustomerVat", c.VatOrPassport);
+    set("viewCustomerPhone", c.PhoneNumber);
+    set("viewCustomerNotes", c.Notes);
+    const ignoreMissingVatEl = this.querySelector("#viewCustomerIgnoreMissingVat");
+    if (ignoreMissingVatEl) ignoreMissingVatEl.checked = !!c.IgnoreMissingVat;
+  }
+
+  #enterEditMode() {
+    this._viewRating = this._viewCustomer?.Rating ?? 0;
+    this._viewErrors = [];
+    this._viewMode = "edit";
+    this.updateComplete.then(() => this.#populateFields());
+  }
+
+  #cancelEdit() {
+    this._viewMode = "view";
+    this._viewErrors = [];
+    this.updateComplete.then(() => this.#populateFields());
+  }
+
+  #handleDelete() {
+    const customer = this._viewCustomer;
+    const hasBookings = state.allBookings.some((b) => b.CustomerId === customer.Id);
+    if (hasBookings) {
+      this.#showNotification(t("customers.error.cannotDelete", "Can't delete: customer has bookings."));
+      return;
+    }
+    showConfirm(
+      t("customers.confirmDelete.title", "Delete Customer"),
+      t("customers.confirmDelete.message", "Are you sure you want to delete this customer?"),
+      t("common.delete", "Delete"),
+      "btn-danger",
+      (done) => {
+        window.api.deleteCustomer(customer.Id)
+          .then(() => {
+            done();
+            coreui.Modal.getInstance(this.querySelector("#viewCustomerModal"))?.hide();
+            this.#reload();
+          })
+          .catch((error) => {
+            done();
+            alert(`Error: ${error.message}`);
+          });
+      },
+    );
+  }
+
+  #showNotification(message) {
+    let container = document.querySelector(".rm-toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.className = "toast-container position-fixed top-0 end-0 p-3 rm-toast-container";
+      container.style.zIndex = "1090";
+      document.body.appendChild(container);
+    }
+    const body = document.createElement("div");
+    body.className = "toast-body";
+    body.textContent = message;
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn-close me-2 m-auto";
+    closeBtn.setAttribute("data-coreui-dismiss", "toast");
+    const wrapper = document.createElement("div");
+    wrapper.className = "d-flex";
+    wrapper.append(body, closeBtn);
+    const toastEl = document.createElement("div");
+    toastEl.className = "toast align-items-center text-bg-warning border-0";
+    toastEl.setAttribute("role", "alert");
+    toastEl.append(wrapper);
+    container.appendChild(toastEl);
+    const toast = new coreui.Toast(toastEl, { delay: 4000 });
+    toast.show();
+    toastEl.addEventListener("hidden.coreui.toast", () => toastEl.remove());
+  }
+
+  async #submitViewEdit() {
+    const customerId = this._viewCustomer.Id;
+    const fullName = this.querySelector("#viewCustomerFullName").value.trim();
+    const vatOrPassport = this.querySelector("#viewCustomerVat").value.trim();
+    const phoneNumber = normalizePhone(this.querySelector("#viewCustomerPhone").value);
+    const notes = (this.querySelector("#viewCustomerNotes")?.value ?? "").trim();
+    const ignoreMissingVat = this.querySelector("#viewCustomerIgnoreMissingVat").checked;
+    const rating = this._viewRating;
+    const errors = validateCustomerForm(fullName);
+    if (errors.length) {
+      this._viewErrors = errors;
+      return;
+    }
+    this._viewErrors = [];
+    const saveBtn = this.querySelector("#viewCustomerSaveBtn");
+    const lb = coreui.LoadingButton.getInstance(saveBtn) ?? new coreui.LoadingButton(saveBtn, { disabledOnLoading: true });
+    this._viewSaving = true;
+    lb.start();
+    try {
+      await window.api.updateCustomer(customerId, {
+        FullName: fullName,
+        VatOrPassport: vatOrPassport,
+        Rating: rating,
+        Notes: notes,
+        PhoneNumber: phoneNumber,
+        IgnoreMissingVat: ignoreMissingVat,
+      });
+      await this.#reload();
+      this._viewCustomer = state.allCustomers.find((c) => c.Id === customerId) ?? this._viewCustomer;
+      this._viewMode = "view";
+      this._viewErrors = [];
+      this.updateComplete.then(() => this.#populateFields());
+    } catch (error) {
+      this._viewErrors = [error.message];
+    } finally {
+      lb.stop();
+      this._viewSaving = false;
+    }
+  }
+
+  // --- add modal ---
 
   #openAddModal() {
     this._addErrors = [];
     this._addSaving = false;
+    this._addRating = 0;
     const modal = coreui.Modal.getOrCreateInstance(this.querySelector("#addCustomerModal"));
     modal.show();
     this.updateComplete.then(() => {
@@ -163,23 +271,6 @@ class CustomersTab extends LitElement {
       this.querySelector("#addCustomerPhone").value = "";
       this.querySelector("#addCustomerNotes").value = "";
       this.querySelector("#addCustomerIgnoreMissingVat").checked = false;
-      this._addRating = 0;
-    });
-  }
-
-  #openEditModal(customer) {
-    this._editErrors = [];
-    this._editSaving = false;
-    const modal = coreui.Modal.getOrCreateInstance(this.querySelector("#editCustomerModal"));
-    modal.show();
-    this.updateComplete.then(() => {
-      this.querySelector("#editCustomerId").value = customer.Id;
-      this.querySelector("#editCustomerFullName").value = customer.FullName;
-      this.querySelector("#editCustomerVat").value = customer.VatOrPassport || "";
-      this.querySelector("#editCustomerPhone").value = customer.PhoneNumber || "";
-      this.querySelector("#editCustomerNotes").value = customer.Notes || "";
-      this.querySelector("#editCustomerIgnoreMissingVat").checked = !!customer.IgnoreMissingVat;
-      this._editRating = customer.Rating ?? 0;
     });
   }
 
@@ -195,7 +286,6 @@ class CustomersTab extends LitElement {
       this._addErrors = errors;
       return;
     }
-
     this._addErrors = [];
     const addBtn = this.querySelector("#addCustomerSaveBtn");
     const addLb = coreui.LoadingButton.getInstance(addBtn) ?? new coreui.LoadingButton(addBtn, { disabledOnLoading: true });
@@ -220,72 +310,13 @@ class CustomersTab extends LitElement {
     }
   }
 
-  async #submitEdit() {
-    const customerId = this.querySelector("#editCustomerId").value;
-    const fullName = this.querySelector("#editCustomerFullName").value.trim();
-    const vatOrPassport = this.querySelector("#editCustomerVat").value.trim();
-    const phoneNumber = normalizePhone(this.querySelector("#editCustomerPhone").value);
-    const notes = this.querySelector("#editCustomerNotes").value.trim();
-    const ignoreMissingVat = this.querySelector("#editCustomerIgnoreMissingVat").checked;
-    const rating = this._editRating;
-    const errors = validateCustomerForm(fullName);
-    if (errors.length) {
-      this._editErrors = errors;
-      return;
-    }
-
-    this._editErrors = [];
-    const editBtn = this.querySelector("#editCustomerSaveBtn");
-    const editLb = coreui.LoadingButton.getInstance(editBtn) ?? new coreui.LoadingButton(editBtn, { disabledOnLoading: true });
-    this._editSaving = true;
-    editLb.start();
-    try {
-      await window.api.updateCustomer(customerId, {
-        FullName: fullName,
-        VatOrPassport: vatOrPassport,
-        Rating: rating,
-        Notes: notes,
-        PhoneNumber: phoneNumber,
-        IgnoreMissingVat: ignoreMissingVat,
-      });
-      coreui.Modal.getInstance(this.querySelector("#editCustomerModal")).hide();
-      await this.#reload();
-    } catch (error) {
-      this._editErrors = [error.message];
-    } finally {
-      editLb.stop();
-      this._editSaving = false;
-    }
-  }
-
-  #confirmDelete(customer) {
-    showConfirm(
-      t("customers.confirmDelete.title", "Delete Customer"),
-      t("customers.confirmDelete.message", "Are you sure you want to delete this customer?"),
-      t("common.delete", "Delete"),
-      "btn-danger",
-      (done) => {
-        window.api.deleteCustomer(customer.Id)
-          .then(() => {
-            done();
-            this.#reload();
-          })
-          .catch((error) => {
-            done();
-            alert(`Error: ${error.message}`);
-          });
-      },
-    );
-  }
+  // --- rendering ---
 
   #renderErrors(errors) {
-    if (!errors.length) {
-      return "";
-    }
-
+    if (!errors.length) return "";
     return html`
       <div class="alert alert-danger py-2 mb-0 mt-2">
-        <ul class="mb-0 ps-3">${errors.map((errorMessage) => html`<li>${errorMessage}</li>`)}</ul>
+        <ul class="mb-0 ps-3">${errors.map((e) => html`<li>${e}</li>`)}</ul>
       </div>
     `;
   }
@@ -310,6 +341,101 @@ class CustomersTab extends LitElement {
     `;
   }
 
+  #renderRatingView(rating) {
+    return html`
+      <div class="mb-3">
+        <label class="form-label fw-semibold small mb-2"><i class="bi bi-star me-1"></i>${t("customers.field.rating", "Rating")}</label>
+        <div>
+          ${rating === 1
+            ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
+            : rating === -1
+            ? html`<span class="badge bg-danger">${t("customers.table.rating.bad", "Bad")}</span>`
+            : html`<span class="text-muted small">—</span>`
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  #renderViewModal() {
+    const c = this._viewCustomer;
+    const isEdit = this._viewMode === "edit";
+
+    return html`
+      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="viewCustomerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-person me-2"></i>${c?.FullName ?? ""}</h5>
+              <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="form-floating mb-3">
+                <input type="text" id="viewCustomerFullName" class="form-control"
+                  placeholder=${t("customers.field.fullName", "Full Name")}
+                  ?readonly=${!isEdit} />
+                <label><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="viewCustomerVat" class="form-control"
+                  placeholder=${t("customers.field.vatOrPassport", "VAT / Passport")}
+                  ?readonly=${!isEdit} />
+                <label><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
+              </div>
+              <div class="form-floating mb-3">
+                <input type="text" id="viewCustomerPhone" class="form-control"
+                  placeholder=${t("customers.field.phone", "Phone")}
+                  ?readonly=${!isEdit} />
+                <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
+              </div>
+              ${isEdit
+                ? this.#renderRatingButtons(this._viewRating, (v) => this._viewRating = v)
+                : this.#renderRatingView(c?.Rating ?? 0)
+              }
+              ${isEdit ? html`
+                <input-autocomplete
+                  id="viewCustomerNotes"
+                  class="mb-3"
+                  label=${t("customers.field.notes", "Notes")}
+                  placeholder=${t("customers.field.notes", "Notes")}
+                  .suggestions=${uniqueNotes(state.allCustomers)}
+                ></input-autocomplete>
+              ` : html`
+                <div class="form-floating mb-3">
+                  <input type="text" id="viewCustomerNotes" class="form-control" readonly
+                    placeholder=${t("customers.field.notes", "Notes")} />
+                  <label>${t("customers.field.notes", "Notes")}</label>
+                </div>
+              `}
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch"
+                  id="viewCustomerIgnoreMissingVat" ?disabled=${!isEdit} />
+                <label class="form-check-label" for="viewCustomerIgnoreMissingVat">
+                  <i class="bi bi-slash-circle me-1"></i>${t("customers.field.ignoreMissingVat", "Ignore missing VAT")}
+                </label>
+              </div>
+              ${isEdit ? this.#renderErrors(this._viewErrors) : ""}
+            </div>
+            <div class="modal-footer">
+              ${isEdit ? html`
+                <button class="btn btn-secondary" @click=${this.#cancelEdit}
+                  ?disabled=${this._viewSaving}>${t("common.cancel", "Cancel")}</button>
+                <button class="btn btn-success" id="viewCustomerSaveBtn" @click=${this.#submitViewEdit}>
+                  <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
+                </button>
+              ` : html`
+                <button class="btn btn-danger" @click=${this.#handleDelete}
+                  ?disabled=${this._viewSaving}>${t("common.delete", "Delete")}</button>
+                <button class="btn btn-primary ms-auto" @click=${this.#enterEditMode}
+                  ?disabled=${this._viewSaving}>${t("common.edit", "Edit")}</button>
+              `}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   #renderAddModal() {
     return html`
       <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="addCustomerModal" tabindex="-1">
@@ -317,6 +443,7 @@ class CustomersTab extends LitElement {
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>${t("customers.modal.add.title", "Add Customer")}</h5>
+              <button type="button" class="btn-close" data-coreui-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <div class="form-floating mb-3">
@@ -327,15 +454,9 @@ class CustomersTab extends LitElement {
                 <input type="text" id="addCustomerVat" class="form-control" placeholder=${t("customers.field.vatOrPassport", "VAT / Passport")} />
                 <label><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
               </div>
-              <div class="input-group mb-3">
-                <div class="form-floating flex-grow-1">
-                  <input type="text" id="addCustomerPhone" class="form-control" placeholder=${t("customers.field.phone", "Phone")} />
-                  <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
-                </div>
-                <button class="btn btn-outline-secondary" type="button" title="Copy phone"
-                  @click=${() => this.#copyPhone(this.querySelector("#addCustomerPhone").value)}>
-                  <i class="bi bi-clipboard"></i>
-                </button>
+              <div class="form-floating mb-3">
+                <input type="text" id="addCustomerPhone" class="form-control" placeholder=${t("customers.field.phone", "Phone")} />
+                <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
               </div>
               ${this.#renderRatingButtons(this._addRating, (v) => this._addRating = v)}
               <input-autocomplete
@@ -365,62 +486,6 @@ class CustomersTab extends LitElement {
     `;
   }
 
-  #renderEditModal() {
-    return html`
-      <div class="modal fade" data-coreui-backdrop="static" data-coreui-keyboard="false" id="editCustomerModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>${t("customers.modal.edit.title", "Edit Customer")}</h5>
-            </div>
-            <div class="modal-body">
-              <input type="hidden" id="editCustomerId" />
-              <div class="form-floating mb-3">
-                <input type="text" id="editCustomerFullName" class="form-control" placeholder=${t("customers.field.fullName", "Full Name")} />
-                <label><i class="bi bi-person me-1"></i>${t("customers.field.fullName", "Full Name")} <span class="text-danger">*</span></label>
-              </div>
-              <div class="form-floating mb-3">
-                <input type="text" id="editCustomerVat" class="form-control" placeholder=${t("customers.field.vatOrPassport", "VAT / Passport")} />
-                <label><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
-              </div>
-              <div class="input-group mb-3">
-                <div class="form-floating flex-grow-1">
-                  <input type="text" id="editCustomerPhone" class="form-control" placeholder=${t("customers.field.phone", "Phone")} />
-                  <label><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
-                </div>
-                <button class="btn btn-outline-secondary" type="button" title="Copy phone"
-                  @click=${() => this.#copyPhone(this.querySelector("#editCustomerPhone").value)}>
-                  <i class="bi bi-clipboard"></i>
-                </button>
-              </div>
-              ${this.#renderRatingButtons(this._editRating, (v) => this._editRating = v)}
-              <input-autocomplete
-                id="editCustomerNotes"
-                class="mb-3"
-                label=${t("customers.field.notes", "Notes")}
-                placeholder=${t("customers.field.notes", "Notes")}
-                .suggestions=${uniqueNotes(state.allCustomers)}
-              ></input-autocomplete>
-              <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" role="switch" id="editCustomerIgnoreMissingVat" />
-                <label class="form-check-label" for="editCustomerIgnoreMissingVat">
-                  <i class="bi bi-slash-circle me-1"></i>${t("customers.field.ignoreMissingVat", "Ignore missing VAT")}
-                </label>
-              </div>
-              ${this.#renderErrors(this._editErrors)}
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-coreui-dismiss="modal" ?disabled=${this._editSaving}>${t("common.cancel", "Cancel")}</button>
-              <button class="btn btn-success" id="editCustomerSaveBtn" @click=${this.#submitEdit}>
-                <i class="bi bi-check-lg me-1"></i>${t("common.save", "Save")}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   render() {
     const customers = this._filteredCustomers;
     const listContent = customers.length
@@ -433,47 +498,27 @@ class CustomersTab extends LitElement {
                   <th class="text-center">${t("customers.table.phone", "Phone")}</th>
                   <th class="text-center">${t("customers.table.vatOrPassport", "VAT / Passport")}</th>
                   <th class="text-center">${t("customers.table.rating", "Rating")}</th>
-                  <th class="text-center"></th>
                 </tr>
               </thead>
               <tbody>
-                ${customers.map((customer) => {
-                  const hasBookings = state.allBookings.some((booking) => booking.CustomerId === customer.Id);
-                  return html`
-                    <tr>
-                      <td class="fw-semibold">${customer.FullName}</td>
-                      <td class="text-center">${customer.PhoneNumber || ""}</td>
-                      <td class="text-center">${customer.VatOrPassport || ""}</td>
-                      <td class="text-center">
-                        ${customer.Rating === 1
-                          ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
-                          : customer.Rating === -1
-                          ? html`<span class="badge bg-danger">${t("customers.table.rating.bad", "Bad")}</span>`
-                          : ""}
-                      </td>
-                      <td class="text-center">
-                        <div class="d-flex gap-1 justify-content-center">
-                          <button class="btn btn-sm btn-outline-secondary" @click=${() => this.#openEditModal(customer)}>
-                            <i class="bi bi-pencil"></i>
-                          </button>
-                          <button
-                            class="btn btn-sm btn-outline-danger"
-                            @click=${() => this.#confirmDelete(customer)}
-                            ?disabled=${hasBookings}
-                            title=${hasBookings ? t("customers.table.hasBookings", "Has bookings") : ""}
-                          >
-                            <i class="bi bi-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  `;
-                })}
+                ${customers.map((customer) => html`
+                  <tr style="cursor:pointer" @click=${() => this.#openViewModal(customer)}>
+                    <td class="fw-semibold">${customer.FullName}</td>
+                    <td class="text-center">${customer.PhoneNumber || ""}</td>
+                    <td class="text-center">${customer.VatOrPassport || ""}</td>
+                    <td class="text-center">
+                      ${customer.Rating === 1
+                        ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
+                        : customer.Rating === -1
+                        ? html`<span class="badge bg-danger">${t("customers.table.rating.bad", "Bad")}</span>`
+                        : ""}
+                    </td>
+                  </tr>
+                `)}
               </tbody>
               <tfoot class="fw-bold">
                 <tr>
                   <td>${t("common.total", "Total")} (${customers.length})</td>
-                  <td class="text-center"></td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
@@ -507,14 +552,11 @@ class CustomersTab extends LitElement {
           @input=${this.#onSearch}
         />
         <div class="form-check form-switch mb-0">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            role="switch"
-            id="customerVatIgnoredFilter"
-            @change=${this.#onVatFilterChange}
-          />
-          <label class="form-check-label small text-nowrap" for="customerVatIgnoredFilter">${t("customers.filter.missingVatOnly", "Missing VAT only")}</label>
+          <input class="form-check-input" type="checkbox" role="switch"
+            id="customerVatIgnoredFilter" @change=${this.#onVatFilterChange} />
+          <label class="form-check-label small text-nowrap" for="customerVatIgnoredFilter">
+            ${t("customers.filter.missingVatOnly", "Missing VAT only")}
+          </label>
         </div>
       `)}
       <div class="card">
@@ -527,7 +569,7 @@ class CustomersTab extends LitElement {
         <div>${listContent}</div>
       </div>
       ${this.#renderAddModal()}
-      ${this.#renderEditModal()}
+      ${this.#renderViewModal()}
     `;
   }
 }

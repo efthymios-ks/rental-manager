@@ -76,6 +76,8 @@ class InputAutocomplete extends LitElement {
     }
     if (changedProperties.has("placeholder")) {
       this.#autocomplete.update({ placeholder: this.placeholder });
+      const input = this.querySelector("input.autocomplete-input");
+      if (input) input.placeholder = this.placeholder;
     }
   }
 

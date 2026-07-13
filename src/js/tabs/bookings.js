@@ -223,7 +223,7 @@ class BookingsTab extends LitElement {
     const amount = parseFloat(this.querySelector("#viewBookingAmount")?.value);
     const notes = (this.querySelector("#viewBookingNotes")?.value ?? "").trim();
     const offRecord = this.querySelector("#viewBookingOffRecord")?.checked ?? false;
-    const errors = this.#validateBooking(rentalId, customerId, arrival, departure, amount);
+    const errors = this.#validateBooking(rentalId, customerId, arrival, departure, amount, bookingId);
     if (errors.length) {
       this._viewErrors = errors;
       return;
@@ -273,7 +273,7 @@ class BookingsTab extends LitElement {
     coreui.Modal.getOrCreateInstance(this.querySelector("#addBookingModal")).show();
   }
 
-  #validateBooking(rentalId, customerId, arrival, departure, amount) {
+  #validateBooking(rentalId, customerId, arrival, departure, amount, excludeBookingId = null) {
     const errors = [];
     if (!rentalId) errors.push(t("bookings.error.rentalRequired", "Please select a rental."));
     if (!customerId) errors.push(t("bookings.error.customerRequired", "Please select a customer."));
@@ -284,6 +284,17 @@ class BookingsTab extends LitElement {
     }
     if (isNaN(amount) || amount <= 0) {
       errors.push(t("bookings.error.amountPositive", "Amount must be greater than 0."));
+    }
+    if (rentalId && arrival && departure && arrival < departure) {
+      const conflict = state.allBookings.find(
+        (b) => b.RentalId === rentalId && b.Id !== excludeBookingId && b.ArrivalDate < departure && arrival < b.DepartureDate,
+      );
+      if (conflict) {
+        const name = conflict.customer?.FullName ?? "—";
+        const from = formatDate(conflict.ArrivalDate);
+        const to = formatDate(conflict.DepartureDate);
+        errors.push(`${t("bookings.error.overlapsWith", "Overlaps with existing booking")}: ${name} (${from} – ${to})`);
+      }
     }
     return errors;
   }

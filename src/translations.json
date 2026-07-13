@@ -95,6 +95,7 @@
       "bookings.error.departureRequired": "Please select a departure date.",
       "bookings.error.departureAfterArrival": "Departure must be after arrival.",
       "bookings.error.amountPositive": "Amount must be greater than 0.",
+      "bookings.error.overlapsWith": "Overlaps with existing booking",
 
       "expenses.title": "Expenses",
       "expenses.empty": "No expenses found.",
@@ -280,6 +281,7 @@
       "bookings.error.departureRequired": "Παρακαλώ επιλέξτε ημερομηνία αναχώρησης.",
       "bookings.error.departureAfterArrival": "Η αναχώρηση πρέπει να είναι μετά την άφιξη.",
       "bookings.error.amountPositive": "Το ποσό πρέπει να είναι μεγαλύτερο από 0.",
+      "bookings.error.overlapsWith": "Βρέθηκε άλλη κράτηση αυτές τις ημερομηνίες",
 
       "expenses.title": "Έξοδα",
       "expenses.empty": "Δεν βρέθηκαν έξοδα.",

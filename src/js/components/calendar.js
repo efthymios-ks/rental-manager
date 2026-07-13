@@ -93,19 +93,16 @@ class CalendarTab extends LitElement {
   #buildDayBookings(bookings) {
     this.#dayBookings = {};
     bookings.forEach((booking) => {
-      if (!booking.ArrivalDate || !booking.DepartureDate) {
-        return;
-      }
+      if (!booking.ArrivalDate || !booking.DepartureDate) return;
 
       let current = new Date(booking.ArrivalDate);
       const end = new Date(booking.DepartureDate);
+      const endInclusive = new Date(end);
+      endInclusive.setDate(endInclusive.getDate() + 1);
 
-      while (current < end) {
+      while (current < endInclusive) {
         const dateKey = current.toISOString().substring(0, 10);
-        if (!this.#dayBookings[dateKey]) {
-          this.#dayBookings[dateKey] = [];
-        }
-
+        if (!this.#dayBookings[dateKey]) this.#dayBookings[dateKey] = [];
         this.#dayBookings[dateKey].push(booking);
         current.setDate(current.getDate() + 1);
       }
@@ -181,21 +178,32 @@ class CalendarTab extends LitElement {
         return;
       }
 
-      if (!bookingMap[booking.RentalId]) {
-        bookingMap[booking.RentalId] = {};
-      }
-
-      if (colorCounters[booking.RentalId] === undefined) {
-        colorCounters[booking.RentalId] = 0;
-      }
+      if (!bookingMap[booking.RentalId]) bookingMap[booking.RentalId] = {};
+      if (colorCounters[booking.RentalId] === undefined) colorCounters[booking.RentalId] = 0;
 
       bookingColorMap[booking.Id] = calendarColors[colorCounters[booking.RentalId] % 2];
       colorCounters[booking.RentalId]++;
 
+      const rMap = bookingMap[booking.RentalId];
+      const arrStr = booking.ArrivalDate;
+      const depStr = booking.DepartureDate;
+
+      // Arrival day → bottom half
+      if (!rMap[arrStr]) rMap[arrStr] = {};
+      rMap[arrStr].bottom = booking;
+
+      // Departure day → top half
+      if (!rMap[depStr]) rMap[depStr] = {};
+      rMap[depStr].top = booking;
+
+      // Middle days → full
       let current = new Date(booking.ArrivalDate);
+      current.setDate(current.getDate() + 1);
       const end = new Date(booking.DepartureDate);
       while (current < end) {
-        bookingMap[booking.RentalId][current.toISOString().substring(0, 10)] = booking;
+        const key = current.toISOString().substring(0, 10);
+        if (!rMap[key]) rMap[key] = {};
+        rMap[key].full = booking;
         current.setDate(current.getDate() + 1);
       }
     });
@@ -219,15 +227,32 @@ class CalendarTab extends LitElement {
 
     const rows = filteredRentals.map((rental) => {
       const cells = dates.map((dateAsString) => {
-        const booking = bookingMap[rental.Id]?.[dateAsString];
+        const cell = bookingMap[rental.Id]?.[dateAsString];
         const todayCls = dateAsString === today ? " cal-gantt-today" : "";
-        if (booking) {
-          const color = bookingColorMap[booking.Id] || "var(--cui-primary)";
+        if (cell) {
+          let bg;
+          if (cell.full) {
+            bg = bookingColorMap[cell.full.Id];
+          } else if (cell.top && cell.bottom) {
+            const tc = bookingColorMap[cell.top.Id];
+            const bc = bookingColorMap[cell.bottom.Id];
+            bg = `linear-gradient(to bottom,${tc} 50%,${bc} 50%)`;
+          } else if (cell.top) {
+            bg = `linear-gradient(to bottom,${bookingColorMap[cell.top.Id]} 50%,transparent 50%)`;
+          } else {
+            bg = `linear-gradient(to bottom,transparent 50%,${bookingColorMap[cell.bottom.Id]} 50%)`;
+          }
+          const title = [cell.top, cell.bottom, cell.full]
+            .filter(Boolean)
+            .filter((v, i, a) => a.indexOf(v) === i)
+            .map((b) => b.customer?.FullName ?? "")
+            .filter(Boolean)
+            .join(" / ");
           return html`<div
             class="cal-gantt-cell cal-gantt-occupied"
-            style="background:${color};"
+            style="background:${bg};"
             data-date="${dateAsString}"
-            title="${booking.customer?.FullName ?? ""}"
+            title="${title}"
           ></div>`;
         }
 

@@ -38,6 +38,10 @@ _style.textContent = `
     padding-top: 0.15rem;
     color: var(--cui-body-color);
   }
+
+  .calc-operand {
+    font-size: 1rem;
+  }
 `;
 document.head.appendChild(_style);
 

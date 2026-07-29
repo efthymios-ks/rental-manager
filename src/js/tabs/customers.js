@@ -6,7 +6,7 @@ import "../components/yearMultiSelect.js";
 import { showConfirm } from "../confirm.js";
 import { state } from "../state.js";
 import { subscribeLanguage, t } from "../translations.js";
-import { computeSharedYears, normalizeSearch, uniqueNotes } from "../utils.js";
+import { computeSharedYears, normalizeSearch, sortCustomers, uniqueNotes } from "../utils.js";
 
 function normalizePhone(raw) {
   return raw.replace(/\s/g, "");
@@ -85,7 +85,7 @@ class CustomersTab extends LitElement {
   #applyFilters() {
     const selectedYears = this.#filterYears?.length ? this.#filterYears : null;
     const selectedRentalIds = this.#filterRentalIds?.length ? this.#filterRentalIds : null;
-    this._filteredCustomers = state.allCustomers.filter((customer) => {
+    this._filteredCustomers = sortCustomers(state.allCustomers.filter((customer) => {
       if (this.#vatIgnoredOnly && customer.VatOrPassport) return false;
 
       if (selectedYears !== null || selectedRentalIds !== null) {
@@ -101,7 +101,7 @@ class CustomersTab extends LitElement {
         normalizeSearch(customer.PhoneNumber).includes(this.#searchQuery) ||
         normalizeSearch(customer.VatOrPassport).includes(this.#searchQuery)
       );
-    });
+    }));
   }
 
   #onSearch(event) {

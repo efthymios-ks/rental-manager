@@ -99,7 +99,8 @@ class CustomersTab extends LitElement {
       return (
         normalizeSearch(customer.FullName).includes(this.#searchQuery) ||
         normalizeSearch(customer.PhoneNumber).includes(this.#searchQuery) ||
-        normalizeSearch(customer.VatOrPassport).includes(this.#searchQuery)
+        normalizeSearch(customer.VatOrPassport).includes(this.#searchQuery) ||
+        normalizeSearch(customer.BookingReference).includes(this.#searchQuery)
       );
     }));
   }
@@ -143,6 +144,7 @@ class CustomersTab extends LitElement {
     const set = (id, val) => { const el = this.querySelector(`#${id}`); if (el) el.value = val ?? ""; };
     set("viewCustomerFullName", c.FullName);
     set("viewCustomerVat", c.VatOrPassport);
+    set("viewCustomerBookingReference", c.BookingReference);
     set("viewCustomerPhone", c.PhoneNumber);
     set("viewCustomerNotes", c.Notes);
     const ignoreMissingVatEl = this.querySelector("#viewCustomerIgnoreMissingVat");
@@ -221,6 +223,7 @@ class CustomersTab extends LitElement {
     const customerId = this._viewCustomer.Id;
     const fullName = this.querySelector("#viewCustomerFullName").value.trim();
     const vatOrPassport = this.querySelector("#viewCustomerVat").value.trim();
+    const bookingReference = this.querySelector("#viewCustomerBookingReference").value.trim();
     const phoneNumber = normalizePhone(this.querySelector("#viewCustomerPhone").value);
     const notes = (this.querySelector("#viewCustomerNotes")?.value ?? "").trim();
     const ignoreMissingVat = this.querySelector("#viewCustomerIgnoreMissingVat").checked;
@@ -239,6 +242,7 @@ class CustomersTab extends LitElement {
       await window.api.updateCustomer(customerId, {
         FullName: fullName,
         VatOrPassport: vatOrPassport,
+        BookingReference: bookingReference,
         Rating: rating,
         Notes: notes,
         PhoneNumber: phoneNumber,
@@ -268,6 +272,7 @@ class CustomersTab extends LitElement {
     this.updateComplete.then(() => {
       this.querySelector("#addCustomerFullName").value = "";
       this.querySelector("#addCustomerVat").value = "";
+      this.querySelector("#addCustomerBookingReference").value = "";
       this.querySelector("#addCustomerPhone").value = "";
       this.querySelector("#addCustomerNotes").value = "";
       this.querySelector("#addCustomerIgnoreMissingVat").checked = false;
@@ -277,6 +282,7 @@ class CustomersTab extends LitElement {
   async #submitAdd() {
     const fullName = this.querySelector("#addCustomerFullName").value.trim();
     const vatOrPassport = this.querySelector("#addCustomerVat").value.trim();
+    const bookingReference = this.querySelector("#addCustomerBookingReference").value.trim();
     const phoneNumber = normalizePhone(this.querySelector("#addCustomerPhone").value);
     const notes = this.querySelector("#addCustomerNotes").value.trim();
     const ignoreMissingVat = this.querySelector("#addCustomerIgnoreMissingVat").checked;
@@ -295,6 +301,7 @@ class CustomersTab extends LitElement {
       await window.api.addCustomer({
         FullName: fullName,
         VatOrPassport: vatOrPassport,
+        BookingReference: bookingReference,
         Rating: rating,
         Notes: notes,
         PhoneNumber: phoneNumber,
@@ -383,6 +390,12 @@ class CustomersTab extends LitElement {
                 <label for="viewCustomerVat"><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
               </div>
               <div class="form-floating mb-3">
+                <input type="text" id="viewCustomerBookingReference" class="form-control"
+                  placeholder=${t("customers.field.bookingReference", "Booking Reference")}
+                  ?readonly=${!isEdit} />
+                <label for="viewCustomerBookingReference"><i class="bi bi-bookmark me-1"></i>${t("customers.field.bookingReference", "Booking Reference")}</label>
+              </div>
+              <div class="form-floating mb-3">
                 <input type="text" id="viewCustomerPhone" class="form-control"
                   placeholder=${t("customers.field.phone", "Phone")}
                   ?readonly=${!isEdit} />
@@ -455,6 +468,10 @@ class CustomersTab extends LitElement {
                 <label for="addCustomerVat"><i class="bi bi-card-text me-1"></i>${t("customers.field.vatOrPassportNumber", "VAT / Passport Number")}</label>
               </div>
               <div class="form-floating mb-3">
+                <input type="text" id="addCustomerBookingReference" class="form-control" placeholder=${t("customers.field.bookingReference", "Booking Reference")} />
+                <label for="addCustomerBookingReference"><i class="bi bi-bookmark me-1"></i>${t("customers.field.bookingReference", "Booking Reference")}</label>
+              </div>
+              <div class="form-floating mb-3">
                 <input type="text" id="addCustomerPhone" class="form-control" placeholder=${t("customers.field.phone", "Phone")} />
                 <label for="addCustomerPhone"><i class="bi bi-telephone me-1"></i>${t("customers.field.phoneNumber", "Phone Number")}</label>
               </div>
@@ -488,43 +505,72 @@ class CustomersTab extends LitElement {
 
   render() {
     const customers = this._filteredCustomers;
+    const mobileCustomerItems = customers.map((customer) => {
+      const meta = [customer.PhoneNumber, customer.VatOrPassport].filter(Boolean).join(" · ") || "—";
+      const isLg = customer.FullName.length > 35;
+      const badge = customer.Rating === 1
+        ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
+        : customer.Rating === -1
+        ? html`<span class="badge bg-danger">${t("customers.table.rating.bad", "Bad")}</span>`
+        : "";
+      return html`
+        <button type="button"
+          class="rm-row${isLg ? " rm-row--lg" : ""}"
+          @click=${() => this.#openViewModal(customer)}>
+          <span class="rm-row-main">
+            <span class="rm-row-name">${customer.FullName}</span>
+          </span>
+          <span class="rm-row-meta">${meta}</span>
+          <span class="rm-row-side">${badge}</span>
+        </button>
+      `;
+    });
+
     const listContent = customers.length
       ? html`
-          <div class="table-responsive rm-table-scroll">
-            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
-              <thead class="table-success">
-                <tr>
-                  <th>${t("customers.table.name", "Name")}</th>
-                  <th class="text-center">${t("customers.table.phone", "Phone")}</th>
-                  <th class="text-center">${t("customers.table.vatOrPassport", "VAT / Passport")}</th>
-                  <th class="text-center">${t("customers.table.rating", "Rating")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${customers.map((customer) => html`
-                  <tr style="cursor:pointer" @click=${() => this.#openViewModal(customer)}>
-                    <td class="fw-semibold">${customer.FullName}</td>
-                    <td class="text-center">${customer.PhoneNumber || ""}</td>
-                    <td class="text-center">${customer.VatOrPassport || ""}</td>
-                    <td class="text-center">
-                      ${customer.Rating === 1
-                        ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
-                        : customer.Rating === -1
-                        ? html`<span class="badge bg-danger">${t("customers.table.rating.bad", "Bad")}</span>`
-                        : ""}
-                    </td>
+          <div class="d-none d-md-block">
+            <div class="table-responsive rm-table-scroll">
+              <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+                <thead class="table-success">
+                  <tr>
+                    <th>${t("customers.table.name", "Name")}</th>
+                    <th class="text-center">${t("customers.table.phone", "Phone")}</th>
+                    <th class="text-center">${t("customers.table.vatOrPassport", "VAT / Passport")}</th>
+                    <th class="text-center">${t("customers.table.rating", "Rating")}</th>
                   </tr>
-                `)}
-              </tbody>
-              <tfoot class="fw-bold">
-                <tr>
-                  <td>${t("common.total", "Total")} (${customers.length})</td>
-                  <td class="text-center"></td>
-                  <td class="text-center"></td>
-                  <td class="text-center"></td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  ${customers.map((customer) => html`
+                    <tr style="cursor:pointer" @click=${() => this.#openViewModal(customer)}>
+                      <td class="fw-semibold">${customer.FullName}</td>
+                      <td class="text-center">${customer.PhoneNumber || ""}</td>
+                      <td class="text-center">${customer.VatOrPassport || ""}</td>
+                      <td class="text-center">
+                        ${customer.Rating === 1
+                          ? html`<span class="badge bg-success">${t("customers.table.rating.good", "Good")}</span>`
+                          : customer.Rating === -1
+                          ? html`<span class="badge bg-danger">${t("customers.table.rating.bad", "Bad")}</span>`
+                          : ""}
+                      </td>
+                    </tr>
+                  `)}
+                </tbody>
+                <tfoot class="fw-bold">
+                  <tr>
+                    <td>${t("common.total", "Total")} (${customers.length})</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          <div class="d-md-none">
+            <div class="rm-list-scroll">${mobileCustomerItems}</div>
+            <div class="rm-summary px-3 py-1 d-flex align-items-center">
+              <span class="small fw-bold text-success">${customers.length} ${t("customers.title", "Customers").toLowerCase()}</span>
+            </div>
           </div>
         `
       : html`<p class="text-muted p-3">${t("customers.empty", "No customers found.")}</p>`;

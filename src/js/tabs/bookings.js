@@ -13,6 +13,7 @@ import {
   computeSharedYears,
   defaultSharedYears,
   formatDate,
+  formatMonthYear,
   normalizeSearch,
   uniqueByField,
   uniqueNotes,
@@ -541,51 +542,95 @@ class BookingsTab extends LitElement {
     const totalDays = bookings.reduce((sum, b) => sum + (parseInt(b.DurationDays) || 0), 0);
     const totalAmount = bookings.reduce((sum, b) => sum + (parseFloat(b.AmountEuros) || 0), 0);
 
+    const dm = (s) => s ? `${s.substring(8, 10)}/${s.substring(5, 7)}` : "—";
+    const mobileItems = [];
+    let lastMonth = null;
+    for (const b of bookings) {
+      const mk = formatMonthYear(b.ArrivalDate);
+      if (mk !== lastMonth) {
+        lastMonth = mk;
+        mobileItems.push(html`<div class="rm-month">${mk}</div>`);
+      }
+      const customer = b.customer || {};
+      const rental = b.rental || {};
+      const cName = customer.FullName || b.CustomerId;
+      const rName = rental.Name || b.RentalId;
+      const isLg = (cName + rName).length > 35;
+      mobileItems.push(html`
+        <button type="button"
+          class="rm-row${b.OffRecord ? " rm-row--off" : ""}${isLg ? " rm-row--lg" : ""}"
+          @click=${() => this.#openViewModal(b)}>
+          <span class="rm-row-main">
+            <span class="rm-row-name">${cName}</span>
+            <span class="rm-row-sub">· ${rName}</span>
+          </span>
+          <span class="rm-row-meta">${dm(b.ArrivalDate)} → ${dm(b.DepartureDate)} · ${b.DurationDays}d</span>
+          <span class="rm-row-side">
+            <span class="d-flex align-items-center gap-1">
+              <span class="rm-row-dot"></span>${parseFloat(b.AmountEuros).toFixed(2)}€
+            </span>
+          </span>
+        </button>
+      `);
+    }
+
     return html`
-      <div class="table-responsive rm-table-scroll">
-        <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
-          <thead class="table-success">
-            <tr>
-              <th>${t("bookings.table.rental", "Rental")}</th>
-              <th class="text-center">${t("bookings.table.customer", "Customer")}</th>
-              <th class="text-center">${t("bookings.table.arrival", "Arrival")}</th>
-              <th class="text-center">${t("bookings.table.departure", "Departure")}</th>
-              <th class="text-center">${t("bookings.table.days", "Days")}</th>
-              <th class="text-center">${t("bookings.table.amount", "Amount")}</th>
-              <th class="text-center">${t("bookings.table.offRecord", "Off Record")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${bookings.map((booking) => {
-              const customer = booking.customer || {};
-              const rental = booking.rental || {};
-              return html`
-                <tr style="cursor:pointer" @click=${() => this.#openViewModal(booking)}>
-                  <td class="fw-semibold">${rental.Name || booking.RentalId}</td>
-                  <td class="text-center">${customer.FullName || booking.CustomerId}</td>
-                  <td class="text-center">${formatDate(booking.ArrivalDate)}</td>
-                  <td class="text-center">${formatDate(booking.DepartureDate)}</td>
-                  <td class="text-center">${booking.DurationDays}</td>
-                  <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
-                  <td class="text-center">
-                    ${booking.OffRecord ? html`<span class="badge bg-dark">${t("bookings.table.offRecord.short", "Off")}</span>` : ""}
-                  </td>
-                </tr>
-              `;
-            })}
-          </tbody>
-          <tfoot class="fw-bold">
-            <tr>
-              <td>${t("common.total", "Total")} (${bookings.length})</td>
-              <td class="text-center"></td>
-              <td class="text-center"></td>
-              <td class="text-center"></td>
-              <td class="text-center">${totalDays}</td>
-              <td class="text-center">${totalAmount.toFixed(2)}€</td>
-              <td class="text-center"></td>
-            </tr>
-          </tfoot>
-        </table>
+      <div class="d-none d-md-block">
+        <div class="table-responsive rm-table-scroll">
+          <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+            <thead class="table-success">
+              <tr>
+                <th>${t("bookings.table.rental", "Rental")}</th>
+                <th class="text-center">${t("bookings.table.customer", "Customer")}</th>
+                <th class="text-center">${t("bookings.table.arrival", "Arrival")}</th>
+                <th class="text-center">${t("bookings.table.departure", "Departure")}</th>
+                <th class="text-center">${t("bookings.table.days", "Days")}</th>
+                <th class="text-center">${t("bookings.table.amount", "Amount")}</th>
+                <th class="text-center">${t("bookings.table.offRecord", "Off Record")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bookings.map((booking) => {
+                const customer = booking.customer || {};
+                const rental = booking.rental || {};
+                return html`
+                  <tr style="cursor:pointer" @click=${() => this.#openViewModal(booking)}>
+                    <td class="fw-semibold">${rental.Name || booking.RentalId}</td>
+                    <td class="text-center">${customer.FullName || booking.CustomerId}</td>
+                    <td class="text-center">${formatDate(booking.ArrivalDate)}</td>
+                    <td class="text-center">${formatDate(booking.DepartureDate)}</td>
+                    <td class="text-center">${booking.DurationDays}</td>
+                    <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
+                    <td class="text-center">
+                      ${booking.OffRecord ? html`<span class="badge bg-dark">${t("bookings.table.offRecord.short", "Off")}</span>` : ""}
+                    </td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+            <tfoot class="fw-bold">
+              <tr>
+                <td>${t("common.total", "Total")} (${bookings.length})</td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-center">${totalDays}</td>
+                <td class="text-center">${totalAmount.toFixed(2)}€</td>
+                <td class="text-center"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="d-md-none">
+        <div class="rm-list-scroll">${mobileItems}</div>
+        <div class="rm-summary px-3 py-1 d-flex justify-content-between align-items-center">
+          <span class="small fw-bold text-success">${bookings.length} ${t("bookings.title", "Bookings").toLowerCase()}</span>
+          <div class="d-flex gap-3 small">
+            <span class="text-muted">${t("bookings.table.days", "Days")} <b class="text-dark">${totalDays}</b></span>
+            <span class="text-muted">${t("common.total", "Total")} <b class="text-success">${totalAmount.toFixed(2)}€</b></span>
+          </div>
+        </div>
       </div>
     `;
   }

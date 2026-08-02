@@ -11,6 +11,7 @@ const SCHEMA = {
       "Id",
       "FullName",
       "VatOrPassport",
+      "BookingReference",
       "PhoneNumber",
       "Rating",
       "Notes",
@@ -149,6 +150,7 @@ function encodeCustomer(customer) {
   return {
     FullName: customer.FullName,
     VatOrPassport: customer.VatOrPassport || "",
+    BookingReference: customer.BookingReference || "",
     PhoneNumber: String(customer.PhoneNumber || ""),
     Rating: customer.Rating ? String(customer.Rating) : "",
     Notes: customer.Notes || "",
@@ -194,6 +196,7 @@ function decodeCustomer(row) {
   return {
     ...row,
     VatOrPassport: row.VatOrPassport || null,
+    BookingReference: row.BookingReference || "",
     Rating: parseInt(row.Rating) || 0,
     Notes: row.Notes || "",
     PhoneNumber: String(row.PhoneNumber || ""),

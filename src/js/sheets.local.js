@@ -9,9 +9,9 @@ const SAMPLE_DATA = {
     { Id: "r2", Name: "Villa B",     PropertyRegistryNumber: "REG-002", FloorArea: "120", ElectricitySupplyNumber: "EL-002" },
   ],
   customers: [
-    { Id: "c1", FullName: "John Smith",        VatOrPassport: "AB123456", PhoneNumber: "+30 210 1234567", Rating: 5, Notes: "Great guest",  IgnoreMissingVat: false },
-    { Id: "c2", FullName: "Maria Papadopoulou", VatOrPassport: null,       PhoneNumber: "+30 697 9876543", Rating: 4, Notes: "",             IgnoreMissingVat: false },
-    { Id: "c3", FullName: "Klaus Weber",        VatOrPassport: "DE987654", PhoneNumber: "+49 30 55512345", Rating: 3, Notes: "Late checkout", IgnoreMissingVat: false },
+    { Id: "c1", FullName: "John Smith",        VatOrPassport: "AB123456", BookingReference: "",         PhoneNumber: "+30 210 1234567", Rating: 5, Notes: "Great guest",  IgnoreMissingVat: false },
+    { Id: "c2", FullName: "Maria Papadopoulou", VatOrPassport: null,       BookingReference: "BKG-98765", PhoneNumber: "+30 697 9876543", Rating: 4, Notes: "",             IgnoreMissingVat: false },
+    { Id: "c3", FullName: "Klaus Weber",        VatOrPassport: "DE987654", BookingReference: "",         PhoneNumber: "+49 30 55512345", Rating: 3, Notes: "Late checkout", IgnoreMissingVat: false },
   ],
   bookings: [
     { Id: "b1", RentalId: "r1", CustomerId: "c1", ArrivalDate: "2025-07-01", DepartureDate: "2025-07-14", AmountEuros: "1400", Notes: "",             OffRecord: false },
@@ -69,7 +69,7 @@ async function deleteRental(id) {
 }
 
 async function addCustomer(customer) {
-  _data.customers.push({ Id: newId(), FullName: customer.FullName, VatOrPassport: customer.VatOrPassport || null, PhoneNumber: String(customer.PhoneNumber || ""), Rating: customer.Rating || 0, Notes: customer.Notes || "", IgnoreMissingVat: !!customer.IgnoreMissingVat });
+  _data.customers.push({ Id: newId(), FullName: customer.FullName, VatOrPassport: customer.VatOrPassport || null, BookingReference: customer.BookingReference || "", PhoneNumber: String(customer.PhoneNumber || ""), Rating: customer.Rating || 0, Notes: customer.Notes || "", IgnoreMissingVat: !!customer.IgnoreMissingVat });
   _save();
 }
 async function updateCustomer(id, customer) {

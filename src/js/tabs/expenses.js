@@ -468,39 +468,68 @@ class ExpensesTab extends LitElement {
   render() {
     const expenses = this._filteredExpenses;
     const totalAmount = expenses.reduce((sum, e) => sum + (parseFloat(e.AmountEuros) || 0), 0);
+    const mobileExpenseItems = [];
+    for (const e of expenses) {
+      const rentalLabel = formatRentalsLabel(e.rentals, state.allRentals.length);
+      const isLg = (e.Name + rentalLabel).length > 35;
+      mobileExpenseItems.push(html`
+        <button type="button"
+          class="rm-row${isLg ? " rm-row--lg" : ""}"
+          @click=${() => this.#openViewModal(e)}>
+          <span class="rm-row-main">
+            <span class="rm-row-name">${e.Name}</span>
+          </span>
+          <span class="rm-row-meta">${rentalLabel}</span>
+          <span class="rm-row-side">
+            <span>${parseFloat(e.AmountEuros).toFixed(2)}€</span>
+            <span class="rm-row-date">${e.DateCreated ? formatDate(e.DateCreated) : ""}</span>
+          </span>
+        </button>
+      `);
+    }
+
     const listContent = expenses.length
       ? html`
-          <div class="table-responsive rm-table-scroll">
-            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
-              <thead class="table-success">
-                <tr>
-                  <th>${t("expenses.table.name", "Name")}</th>
-                  <th class="text-center">${t("expenses.table.rentals", "Rentals")}</th>
-                  <th class="text-center">${t("expenses.table.date", "Date")}</th>
-                  <th class="text-center">${t("expenses.table.amount", "Amount")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${expenses.map((expense) => html`
-                  <tr style="cursor:pointer" @click=${() => this.#openViewModal(expense)}>
-                    <td class="fw-semibold">${expense.Name}</td>
-                    <td class="text-center">
-                      ${formatRentalsLabel(expense.rentals, state.allRentals.length)}
-                    </td>
-                    <td class="text-center">${expense.DateCreated ? formatDate(expense.DateCreated) : ""}</td>
-                    <td class="text-center">${parseFloat(expense.AmountEuros).toFixed(2)}€</td>
+          <div class="d-none d-md-block">
+            <div class="table-responsive rm-table-scroll">
+              <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+                <thead class="table-success">
+                  <tr>
+                    <th>${t("expenses.table.name", "Name")}</th>
+                    <th class="text-center">${t("expenses.table.rentals", "Rentals")}</th>
+                    <th class="text-center">${t("expenses.table.date", "Date")}</th>
+                    <th class="text-center">${t("expenses.table.amount", "Amount")}</th>
                   </tr>
-                `)}
-              </tbody>
-              <tfoot class="fw-bold">
-                <tr>
-                  <td>${t("common.total", "Total")} (${expenses.length})</td>
-                  <td class="text-center"></td>
-                  <td class="text-center"></td>
-                  <td class="text-center">${totalAmount.toFixed(2)}€</td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  ${expenses.map((expense) => html`
+                    <tr style="cursor:pointer" @click=${() => this.#openViewModal(expense)}>
+                      <td class="fw-semibold">${expense.Name}</td>
+                      <td class="text-center">
+                        ${formatRentalsLabel(expense.rentals, state.allRentals.length)}
+                      </td>
+                      <td class="text-center">${expense.DateCreated ? formatDate(expense.DateCreated) : ""}</td>
+                      <td class="text-center">${parseFloat(expense.AmountEuros).toFixed(2)}€</td>
+                    </tr>
+                  `)}
+                </tbody>
+                <tfoot class="fw-bold">
+                  <tr>
+                    <td>${t("common.total", "Total")} (${expenses.length})</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center">${totalAmount.toFixed(2)}€</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          <div class="d-md-none">
+            <div class="rm-list-scroll">${mobileExpenseItems}</div>
+            <div class="rm-summary px-3 py-1 d-flex justify-content-between align-items-center">
+              <span class="small fw-bold text-success">${expenses.length} ${t("expenses.title", "Expenses").toLowerCase()}</span>
+              <span class="small text-muted">${t("common.total", "Total")} <b class="text-success">${totalAmount.toFixed(2)}€</b></span>
+            </div>
           </div>
         `
       : html`<p class="text-muted p-3">${t("expenses.empty", "No expenses found.")}</p>`;

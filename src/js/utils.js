@@ -1,4 +1,4 @@
-import { t } from "./translations.js";
+import { t, getLanguage } from "./translations.js";
 
 export function todayStr() {
   const d = new Date();
@@ -191,4 +191,10 @@ export function getCheckedIds(containerId) {
     document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`),
     (checkbox) => checkbox.value,
   );
+}
+
+export function formatMonthYear(dateString) {
+  if (!dateString) return "";
+  const [y, m] = dateString.split("-");
+  return new Date(+y, +m - 1, 1).toLocaleString(getLanguage(), { month: "short", year: "numeric" });
 }

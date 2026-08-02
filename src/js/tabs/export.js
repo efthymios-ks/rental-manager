@@ -3,6 +3,7 @@ import { filterBar } from "../components/filterBar.js";
 import "../components/rentalsMultiSelect.js";
 import { state } from "../state.js";
 import { subscribeLanguage, getLanguage, t } from "../translations.js";
+import { formatDate, formatMonthYear } from "../utils.js";
 
 class ExportTab extends LitElement {
   static properties = {
@@ -186,20 +187,53 @@ class ExportTab extends LitElement {
       cell.alignment = headerStyle.alignment;
     });
 
+    let hasMissingVat = false;
+
     for (const booking of bookings) {
       const customer = booking.customer || {};
+      const missingVat = !customer.VatOrPassport && !!customer.BookingReference;
+      if (missingVat) hasMissingVat = true;
+
       const row = worksheet.addRow([
         customer.FullName || "-",
-        String(customer.VatOrPassport || "-"),
+        missingVat ? customer.BookingReference : String(customer.VatOrPassport || "-"),
         (booking.rental && booking.rental.Name) || "-",
         parseFloat(booking.AmountEuros) || 0,
         booking.ArrivalDate || "-",
         booking.DepartureDate || "-",
         booking.DurationDays || 0,
       ]);
-      row.eachCell((cell) => {
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-      });
+
+      if (missingVat) {
+        row.eachCell((cell) => {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF000000" } };
+          cell.font = { color: { argb: "FFFFFFFF" } };
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        });
+      } else {
+        row.eachCell((cell) => {
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        });
+      }
+    }
+
+    if (hasMissingVat) {
+      // col 8 (H) is a blank spacer; note occupies I2:N7 (row 2 so it's below the frozen header)
+      const NOTE_COL_START = 9;
+      const NOTE_COL_END = 14;
+      const NOTE_ROW_START = 2;
+      const NOTE_ROW_END = 7;
+      worksheet.mergeCells(NOTE_ROW_START, NOTE_COL_START, NOTE_ROW_END, NOTE_COL_END);
+      const noteCell = worksheet.getCell(NOTE_ROW_START, NOTE_COL_START);
+      noteCell.value = t("export.missingVatNote", "");
+      noteCell.alignment = { wrapText: true, vertical: "top", horizontal: "left" };
+      noteCell.font = { size: 10 };
+      for (let c = NOTE_COL_START; c <= NOTE_COL_END; c++) {
+        worksheet.getColumn(c).width = 16;
+      }
+      for (let r = NOTE_ROW_START; r <= NOTE_ROW_END; r++) {
+        worksheet.getRow(r).height = 20;
+      }
     }
 
     if (this._includeExpenses) {
@@ -260,49 +294,87 @@ class ExportTab extends LitElement {
       (sum, booking) => sum + (parseInt(booking.DurationDays) || 0),
       0,
     );
+    const dm = (s) => s ? `${s.substring(8, 10)}/${s.substring(5, 7)}` : "—";
+    const mobileExportItems = [];
+    let lastExportMonth = null;
+    for (const booking of this._filteredBookings) {
+      const mk = formatMonthYear(booking.ArrivalDate);
+      if (mk !== lastExportMonth) {
+        lastExportMonth = mk;
+        mobileExportItems.push(html`<div class="rm-month">${mk}</div>`);
+      }
+      const customer = booking.customer || {};
+      const rentalName = (booking.rental && booking.rental.Name) || "-";
+      const cName = customer.FullName || "-";
+      const vat = String(customer.VatOrPassport || "-");
+      const isLg = (cName + vat).length > 35;
+      mobileExportItems.push(html`
+        <div class="rm-row rm-row--static${isLg ? " rm-row--lg" : ""}">
+          <span class="rm-row-main">
+            <span class="rm-row-name">${cName}</span>
+            <span class="rm-row-sub">· ${vat}</span>
+          </span>
+          <span class="rm-row-meta">${rentalName} · ${dm(booking.ArrivalDate)} → ${dm(booking.DepartureDate)} · ${booking.DurationDays}d</span>
+          <span class="rm-row-side">${parseFloat(booking.AmountEuros).toFixed(2)}€</span>
+        </div>
+      `);
+    }
+
     const previewContent = this._filteredBookings.length
       ? html`
-          <div class="table-responsive rm-table-scroll">
-            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
-              <thead class="table-success">
-                <tr>
-                  <th class="text-center">${t("export.table.customer", "Customer")}</th>
-                  <th class="text-center">${t("export.table.vatOrPassport", "VAT / Passport")}</th>
-                  <th class="text-center">${t("export.table.rental", "Rental")}</th>
-                  <th class="text-center">${t("export.table.income", "Income")}</th>
-                  <th class="text-center">${t("export.table.arrival", "Arrival")}</th>
-                  <th class="text-center">${t("export.table.departure", "Departure")}</th>
-                  <th class="text-center">${t("export.table.days", "Days")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${this._filteredBookings.map((booking) => {
-                  const customer = booking.customer || {};
-                  return html`
-                    <tr>
-                      <td class="text-center">${customer.FullName || "-"}</td>
-                      <td class="text-center">${String(customer.VatOrPassport || "-")}</td>
-                      <td class="text-center">${(booking.rental && booking.rental.Name) || "-"}</td>
-                      <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
-                      <td class="text-center">${booking.ArrivalDate}</td>
-                      <td class="text-center">${booking.DepartureDate}</td>
-                      <td class="text-center">${booking.DurationDays}</td>
-                    </tr>
-                  `;
-                })}
-              </tbody>
-              <tfoot class="fw-bold">
-                <tr>
-                  <td class="text-center">${t("common.total", "Total")} (${this._filteredBookings.length})</td>
-                  <td class="text-center"></td>
-                  <td class="text-center"></td>
-                  <td class="text-center">${totalIncome.toFixed(2)}€</td>
-                  <td class="text-center"></td>
-                  <td class="text-center"></td>
-                  <td class="text-center">${totalDays}</td>
-                </tr>
-              </tfoot>
-            </table>
+          <div class="d-none d-md-block">
+            <div class="table-responsive rm-table-scroll">
+              <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+                <thead class="table-success">
+                  <tr>
+                    <th class="text-center">${t("export.table.customer", "Customer")}</th>
+                    <th class="text-center">${t("export.table.vatOrPassport", "VAT / Passport")}</th>
+                    <th class="text-center">${t("export.table.rental", "Rental")}</th>
+                    <th class="text-center">${t("export.table.income", "Income")}</th>
+                    <th class="text-center">${t("export.table.arrival", "Arrival")}</th>
+                    <th class="text-center">${t("export.table.departure", "Departure")}</th>
+                    <th class="text-center">${t("export.table.days", "Days")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${this._filteredBookings.map((booking) => {
+                    const customer = booking.customer || {};
+                    return html`
+                      <tr>
+                        <td class="text-center">${customer.FullName || "-"}</td>
+                        <td class="text-center">${String(customer.VatOrPassport || "-")}</td>
+                        <td class="text-center">${(booking.rental && booking.rental.Name) || "-"}</td>
+                        <td class="text-center">${parseFloat(booking.AmountEuros).toFixed(2)}€</td>
+                        <td class="text-center">${booking.ArrivalDate}</td>
+                        <td class="text-center">${booking.DepartureDate}</td>
+                        <td class="text-center">${booking.DurationDays}</td>
+                      </tr>
+                    `;
+                  })}
+                </tbody>
+                <tfoot class="fw-bold">
+                  <tr>
+                    <td class="text-center">${t("common.total", "Total")} (${this._filteredBookings.length})</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center">${totalIncome.toFixed(2)}€</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center">${totalDays}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          <div class="d-md-none">
+            <div class="rm-list-scroll">${mobileExportItems}</div>
+            <div class="rm-summary px-3 py-1 d-flex justify-content-between align-items-center">
+              <span class="small fw-bold text-success">${this._filteredBookings.length} ${t("bookings.title", "Bookings").toLowerCase()}</span>
+              <div class="d-flex gap-3 small">
+                <span class="text-muted">${t("bookings.table.days", "Days")} <b class="text-dark">${totalDays}</b></span>
+                <span class="text-muted">${t("common.total", "Total")} <b class="text-success">${totalIncome.toFixed(2)}€</b></span>
+              </div>
+            </div>
           </div>
         `
       : html`<p class="text-muted p-3">${t("export.empty", "No bookings for this range.")}</p>`;

@@ -475,37 +475,66 @@ class RentalsTab extends LitElement {
   }
 
   render() {
+    const mobileRentalItems = this._rentals.map((rental) => {
+      const metaParts = [
+        rental.Address,
+        rental.FloorArea ? `${rental.FloorArea}m²` : null,
+        rental.PropertyRegistryNumber,
+      ].filter(Boolean);
+      const meta = metaParts.join(" · ") || "—";
+      const isLg = rental.Name.length > 35;
+      return html`
+        <button type="button"
+          class="rm-row${isLg ? " rm-row--lg" : ""}"
+          @click=${() => this.#openViewModal(rental)}>
+          <span class="rm-row-main">
+            <span class="rm-row-name">${rental.Name}</span>
+          </span>
+          <span class="rm-row-meta">${meta}</span>
+          <span class="rm-row-side"><i class="bi bi-chevron-right text-muted"></i></span>
+        </button>
+      `;
+    });
+
     const listContent = this._rentals.length
       ? html`
-          <div class="table-responsive rm-table-scroll">
-            <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
-              <thead class="table-success">
-                <tr>
-                  <th>${t("rentals.table.name", "Name")}</th>
-                  <th class="text-center">${t("rentals.table.floorArea", "Floor Area (m²)")}</th>
-                  <th class="text-center">${t("rentals.table.propertyRegistry", "Property Registry #")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${this._rentals.map((rental) => html`
-                  <tr
-                    style="cursor:pointer"
-                    @click=${() => this.#openViewModal(rental)}
-                  >
-                    <td class="fw-semibold">${rental.Name}</td>
-                    <td class="text-center">${rental.FloorArea || ""}</td>
-                    <td class="text-center">${rental.PropertyRegistryNumber || ""}</td>
+          <div class="d-none d-md-block">
+            <div class="table-responsive rm-table-scroll">
+              <table class="table table-sm table-striped table-hover rm-table rm-sticky-footer mb-0">
+                <thead class="table-success">
+                  <tr>
+                    <th>${t("rentals.table.name", "Name")}</th>
+                    <th class="text-center">${t("rentals.table.floorArea", "Floor Area (m²)")}</th>
+                    <th class="text-center">${t("rentals.table.propertyRegistry", "Property Registry #")}</th>
                   </tr>
-                `)}
-              </tbody>
-              <tfoot class="fw-bold">
-                <tr>
-                  <td>${t("common.total", "Total")} (${this._rentals.length})</td>
-                  <td class="text-center"></td>
-                  <td class="text-center"></td>
-                </tr>
-              </tfoot>
-            </table>
+                </thead>
+                <tbody>
+                  ${this._rentals.map((rental) => html`
+                    <tr
+                      style="cursor:pointer"
+                      @click=${() => this.#openViewModal(rental)}
+                    >
+                      <td class="fw-semibold">${rental.Name}</td>
+                      <td class="text-center">${rental.FloorArea || ""}</td>
+                      <td class="text-center">${rental.PropertyRegistryNumber || ""}</td>
+                    </tr>
+                  `)}
+                </tbody>
+                <tfoot class="fw-bold">
+                  <tr>
+                    <td>${t("common.total", "Total")} (${this._rentals.length})</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          <div class="d-md-none">
+            <div class="rm-list-scroll">${mobileRentalItems}</div>
+            <div class="rm-summary px-3 py-1 d-flex align-items-center">
+              <span class="small fw-bold text-success">${this._rentals.length} ${t("rentals.title", "Rentals").toLowerCase()}</span>
+            </div>
           </div>
         `
       : html`<p class="text-muted p-3">${t("rentals.empty", "No rentals yet.")}</p>`;

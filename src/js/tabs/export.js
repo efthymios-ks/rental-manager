@@ -147,8 +147,8 @@ class ExportTab extends LitElement {
     this._filteredBookings = state.exportBookings.filter((booking) => {
       if (!this._includeOffRecord && booking.OffRecord) return false;
       if (selectedRentalIds !== null && !selectedRentalIds.includes(booking.RentalId)) return false;
-      if (this.#fromDate && booking.ArrivalDate < this.#fromDate) return false;
-      if (this.#toDate && booking.ArrivalDate > this.#toDate) return false;
+      if (this.#fromDate && booking.DepartureDate < this.#fromDate) return false;
+      if (this.#toDate && booking.DepartureDate > this.#toDate) return false;
       return true;
     });
   }
@@ -298,7 +298,7 @@ class ExportTab extends LitElement {
     const mobileExportItems = [];
     let lastExportMonth = null;
     for (const booking of this._filteredBookings) {
-      const mk = formatMonthYear(booking.ArrivalDate);
+      const mk = formatMonthYear(booking.DepartureDate);
       if (mk !== lastExportMonth) {
         lastExportMonth = mk;
         mobileExportItems.push(html`<div class="rm-month">${mk}</div>`);

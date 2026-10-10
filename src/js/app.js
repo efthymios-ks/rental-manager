@@ -4,6 +4,7 @@ import "./components/appHeader.js";
 import "./components/calendar.js";
 import "./components/loadingOverlay.js";
 import "./tabs/bookings.js";
+import "./tabs/calculator.js";
 import "./tabs/customers.js";
 import "./tabs/dashboard.js";
 import "./tabs/expenses.js";
@@ -32,7 +33,7 @@ async function onAuthReady() {
 
 function showTab(tabName) {
   state.currentTab = tabName;
-  const tabNames = ["dashboard", "calendar", "bookings", "expenses", "customers", "rentals", "export"];
+  const tabNames = ["dashboard", "calendar", "bookings", "expenses", "customers", "rentals", "calculator", "export"];
 
   tabNames.forEach((currentTabName) => {
     document.getElementById(`tab-${currentTabName}`).classList.toggle("d-none", currentTabName !== tabName);

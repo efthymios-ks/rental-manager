@@ -226,3 +226,9 @@ input[type="number"] {
   .rm-row-meta { margin-top: .1rem; }
   .rm-row-side { align-self: center; }
 }
+
+.tooltip.calc-tooltip .tooltip-inner {
+  text-align: left;
+  max-width: 320px;
+  white-space: pre-line;
+}

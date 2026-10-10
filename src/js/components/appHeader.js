@@ -8,6 +8,7 @@ const TABS = [
   { name: "expenses", label: "Expenses", icon: "bi-receipt" },
   { name: "customers", label: "Customers", icon: "bi-people" },
   { name: "rentals", label: "Rentals", icon: "bi-house-door" },
+  { name: "calculator", label: "Calculator", icon: "bi-calculator" },
   { name: "export", label: "Export", icon: "bi-download" },
 ];
 

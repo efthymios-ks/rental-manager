@@ -419,8 +419,12 @@ class BookingsTab extends LitElement {
               <div class="form-floating mb-3">
                 <input type="text" id="viewBookingAmount" class="form-control" placeholder="0.00"
                   inputmode="decimal" ?readonly=${!isEdit}
+                  aria-describedby="viewBookingAmountHint"
                   @input=${(e) => { const v = e.target.value.replace(",", "."); if (v !== e.target.value) e.target.value = v; }} />
-                <label for="viewBookingAmount"><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
+                <label for="viewBookingAmount"><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Agreed rent (declared)")}</label>
+              </div>
+              <div class="form-text mt-n2 mb-3" id="viewBookingAmountHint">
+                ${t("bookings.field.amountHint", "Nights × price + cleaning/extras − your discounts. Excludes Env. Fee (TAKK), VAT and municipal tax; before platform commission.")}
               </div>
               ${isEdit ? html`
                 <input-autocomplete
@@ -502,8 +506,12 @@ class BookingsTab extends LitElement {
               </div>
               <div class="form-floating mb-3">
                 <input type="text" id="addBookingAmount" class="form-control" placeholder="0.00" inputmode="decimal"
+                  aria-describedby="addBookingAmountHint"
                   @input=${(e) => { const v = e.target.value.replace(",", "."); if (v !== e.target.value) e.target.value = v; }} />
-                <label for="addBookingAmount"><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Amount Paid")}</label>
+                <label for="addBookingAmount"><i class="bi bi-currency-euro me-1"></i>${t("bookings.field.amountPaid", "Agreed rent (declared)")}</label>
+              </div>
+              <div class="form-text mt-n2 mb-3" id="addBookingAmountHint">
+                ${t("bookings.field.amountHint", "Nights × price + cleaning/extras − your discounts. Excludes Env. Fee (TAKK), VAT and municipal tax; before platform commission.")}
               </div>
               <input-autocomplete
                 id="addBookingNotes"
@@ -585,7 +593,7 @@ class BookingsTab extends LitElement {
                 <th class="text-center">${t("bookings.table.arrival", "Arrival")}</th>
                 <th class="text-center">${t("bookings.table.departure", "Departure")}</th>
                 <th class="text-center">${t("bookings.table.days", "Days")}</th>
-                <th class="text-center">${t("bookings.table.amount", "Amount")}</th>
+                <th class="text-center">${t("bookings.table.amount", "Rent")}</th>
                 <th class="text-center">${t("bookings.table.offRecord", "Off Record")}</th>
               </tr>
             </thead>
